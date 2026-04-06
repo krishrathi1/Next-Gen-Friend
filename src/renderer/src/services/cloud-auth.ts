@@ -238,7 +238,8 @@ export async function checkUserApprovalStatus(userId: string): Promise<'pending'
     .eq('id', userId)
     .maybeSingle()
 
-  if (error || !data) return 'pending'
+  if (error) throw new Error(`Could not read approval status: ${error.message}`)
+  if (!data) return 'pending'
   return (data.status || 'pending') as 'pending' | 'approved' | 'rejected'
 }
 
