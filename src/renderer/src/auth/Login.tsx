@@ -44,7 +44,7 @@ export default function LoginPage() {
           <h1 className="text-3xl md:text-4xl font-black tracking-tighter mb-2">
             Authenticate{' '}
             <span className="text-transparent bg-clip-text bg-linear-to-r from-[#6b21a8] to-purple-200">
-              IRIS
+              ELI
             </span>
           </h1>
           <p className="text-gray-400 text-sm font-mono tracking-widest uppercase">

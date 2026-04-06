@@ -80,7 +80,7 @@ const IRIS = (props: IrisProps) => {
         <div className="hidden lg:flex items-center gap-3">
           <RiShieldFlashLine className="text-purple-800 text-xl animate-pulse" />
           <div className="flex flex-col leading-none">
-            <span className="font-black tracking-[0.2em] text-sm text-zinc-100">IRIS AI</span>
+            <span className="font-black tracking-[0.2em] text-sm text-zinc-100">ELI AI</span>
             <span className="text-[11px] font-mono text-purple-800/60 tracking-widest">
               NEURAL INTERFACE
             </span>

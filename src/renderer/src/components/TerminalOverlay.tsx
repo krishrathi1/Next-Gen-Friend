@@ -99,7 +99,7 @@ export default function TerminalOverlay() {
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_#00ff41]"></div>
             <span className="text-[10px] font-mono font-bold tracking-widest text-green-400/80 uppercase">
-              IRIS TERMINAL // EXEC_MODE
+              ELI TERMINAL // EXEC_MODE
             </span>
           </div>
 

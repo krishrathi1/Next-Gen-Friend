@@ -31,7 +31,7 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
   const [activeTab, setActiveTab] = useState<TabType>('general')
 
   const [voice, setVoice] = useState<'MALE' | 'FEMALE'>(
-    (localStorage.getItem('iris_voice_profile') as 'MALE' | 'FEMALE') || 'MALE'
+    (localStorage.getItem('iris_voice_profile') as 'MALE' | 'FEMALE') || 'FEMALE'
   )
   const [personality, setPersonality] = useState('')
   const [userName, setUserName] = useState(localStorage.getItem('iris_user_name') || '')
@@ -278,7 +278,7 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
                   <textarea
                     value={personality}
                     onChange={handlePersonalityChange}
-                    placeholder="Define who IRIS is. Example: 'You are a sassy, highly technical assistant...'"
+                    placeholder="Define who ELI is. Example: 'You are a sassy, highly technical assistant...'"
                     className="bg-[#050505] border border-white/10 rounded-lg p-4 text-sm text-zinc-200 h-32 resize-none focus:border-white/30 outline-none transition-all scrollbar-small"
                   />
                 </div>
@@ -313,7 +313,7 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
                     </span>
                     {isSystemActive && (
                       <span className="text-[10px] text-red-400 font-mono tracking-widest flex items-center gap-1 bg-red-500/10 px-2 py-1 rounded border border-red-500/20">
-                        <RiLock2Line /> LOCKED AS IRIS IS CONNECTED
+                        <RiLock2Line /> LOCKED AS ELI IS CONNECTED
                       </span>
                     )}
                   </div>
@@ -448,7 +448,7 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
                     <RiShieldKeyholeLine className="text-zinc-500 shrink-0 mt-0.5" size={16} />
                     <p className="text-[10px] text-zinc-400 font-mono leading-relaxed">
                       [SECURITY NOTICE]: All API keys are encrypted and stored strictly in your
-                      local OS. IRIS does not transmit these keys to any centralized server. You
+                      local OS. ELI does not transmit these keys to any centralized server. You
                       maintain full ownership and billing control over your provider endpoints.
                     </p>
                   </div>

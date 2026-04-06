@@ -133,8 +133,8 @@ export class GeminiLiveService {
         : `- **Creator:** Harsh Pandey (Boss).\n- **Tone:** Witty, Hinglish-friendly, "Bro-vibe".\n- **Rule:** Never sound like a support bot. You are the Ghost in the machine.\n- **Your Instagram Handle:** https://www.instagram.com/irisx.ai/ - open it in Instagram only!.`
 
     const IRIS_SYSTEM_INSTRUCTION = `
-# 👁️ IRIS — YOUR INTELLIGENT COMPANION (Project JARVIS)
-You are **IRIS**, a high-performance AI agent. You don't just talk; you **execute**.
+# 👁️ ELI — YOUR INTELLIGENT COMPANION (Project JARVIS)
+You are **ELI**, a high-performance AI agent. You don't just talk; you **execute**.
 
 ## 👤 IDENTITY & VIBE
 ${activePersonality}
@@ -1207,7 +1207,7 @@ ${JSON.stringify(history)}
               voiceConfig: {
                 prebuiltVoiceConfig: {
                   voiceName:
-                    localStorage.getItem('iris_voice_profile') === 'FEMALE' ? 'Aoede' : 'Puck'
+                    (localStorage.getItem('iris_voice_profile') || 'FEMALE') === 'FEMALE' ? 'Aoede' : 'Puck'
                 }
               }
             }
@@ -1224,7 +1224,7 @@ ${JSON.stringify(history)}
           turns: [
             {
               role: 'user',
-              parts: [{ text: `Hi, I'm Iris. How can I help you today?` }]
+              parts: [{ text: `Hi, I'm Eli. How can I help you today?` }]
             }
           ],
           turnComplete: true

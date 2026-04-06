@@ -55,7 +55,7 @@ const TitleBar = () => {
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 opacity-60 pointer-events-none">
         <div className="w-2 h-2 rounded-full bg-purple-800 animate-pulse shadow-[0_0_10px_#6b21a8]" />
         <div className="text-[11px] font-bold text-zinc-300 tracking-[0.3em]">
-          IRIS OS // {isMac ? 'MAC' : 'SYSTEM'}
+          ELI OS // {isMac ? 'MAC' : 'SYSTEM'}
         </div>
       </div>
 

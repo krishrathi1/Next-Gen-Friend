@@ -108,7 +108,6 @@ const NotesView = ({ glassPanel }: { glassPanel?: string }) => {
     }, 500)
   }
 
-  }
 
   return (
     <div className="flex-1 bg-gray-900/70 h-full grid grid-cols-12 gap-6 p-6 animate-in fade-in zoom-in duration-300">
@@ -135,7 +134,7 @@ const NotesView = ({ glassPanel }: { glassPanel?: string }) => {
           {notes.length === 0 ? (
             <div className="text-center text-zinc-600 text-xs mt-10">
               <p>No memories saved.</p>
-              <p className="mt-2 opacity-50">Click + or ask IRIS.</p>
+              <p className="mt-2 opacity-50">Click + or ask ELI.</p>
             </div>
           ) : (
             notes.map((note) => (
@@ -160,8 +159,6 @@ const NotesView = ({ glassPanel }: { glassPanel?: string }) => {
                   <p className="text-[9px] text-zinc-500 mt-1 font-mono">
                     {new Date(note.createdAt).toLocaleDateString()}
                   </p>
-                </div>
-
                 </div>
               </div>
             ))
