@@ -7,6 +7,15 @@ import {
   fetchCloudUserProfile
 } from '@renderer/services/cloud-auth'
 
+function isSchemaConfigError(message: string): boolean {
+  const m = message.toLowerCase()
+  return (
+    m.includes('supabase table missing') ||
+    m.includes('rls policy missing') ||
+    (m.includes('relation') && m.includes('does not exist'))
+  )
+}
+
 export default function AuthInitializer() {
   const setAccessToken = useAuthStore((s) => s.setAccessToken)
   const setUser = useAuthStore((s) => s.setUser)
@@ -26,8 +35,15 @@ export default function AuthInitializer() {
         setAccessToken(accessToken)
 
         if (session?.user?.id) {
-          await ensureCloudUserProfile(session.user)
-          await enforceSingleDeviceForUser(session.user.id)
+          try {
+            await ensureCloudUserProfile(session.user)
+            await enforceSingleDeviceForUser(session.user.id)
+          } catch (err: any) {
+            const msg = err?.message || 'Profile sync failed'
+            if (!isSchemaConfigError(msg)) {
+              throw err
+            }
+          }
           const profile = await fetchCloudUserProfile(session.user.id)
           if (profile) {
             setUser(profile)
@@ -58,8 +74,15 @@ export default function AuthInitializer() {
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       try {
         if (session?.user?.id) {
-          await ensureCloudUserProfile(session.user)
-          await enforceSingleDeviceForUser(session.user.id)
+          try {
+            await ensureCloudUserProfile(session.user)
+            await enforceSingleDeviceForUser(session.user.id)
+          } catch (err: any) {
+            const msg = err?.message || 'Profile sync failed'
+            if (!isSchemaConfigError(msg)) {
+              throw err
+            }
+          }
         }
       } catch (err: any) {
         alert(err?.message || 'Sign-in blocked on this device.')

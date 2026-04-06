@@ -13,6 +13,15 @@ type DeviceDetails = {
   appVersion: string
 }
 
+function isSchemaConfigError(message: string): boolean {
+  const m = message.toLowerCase()
+  return (
+    m.includes('supabase table missing') ||
+    m.includes('rls policy missing') ||
+    m.includes('relation') && m.includes('does not exist')
+  )
+}
+
 async function getCurrentDeviceDetails(): Promise<DeviceDetails> {
   const details = await window.electron?.ipcRenderer?.invoke('get-device-details')
 
@@ -157,8 +166,15 @@ export async function completeOAuthFromDeepLink(rawUrl: string): Promise<void> {
       throw error
     }
     if (data?.user?.id) {
-      await ensureCloudUserProfile(data.user)
-      await enforceSingleDeviceForUser(data.user.id)
+      try {
+        await ensureCloudUserProfile(data.user)
+        await enforceSingleDeviceForUser(data.user.id)
+      } catch (err: any) {
+        const msg = err?.message || 'Failed to sync user profile.'
+        if (!isSchemaConfigError(msg)) {
+          throw err
+        }
+      }
     }
     return
   }
@@ -187,8 +203,15 @@ export async function completeOAuthFromDeepLink(rawUrl: string): Promise<void> {
   }
 
   if (data?.user?.id) {
-    await ensureCloudUserProfile(data.user)
-    await enforceSingleDeviceForUser(data.user.id)
+    try {
+      await ensureCloudUserProfile(data.user)
+      await enforceSingleDeviceForUser(data.user.id)
+    } catch (err: any) {
+      const msg = err?.message || 'Failed to sync user profile.'
+      if (!isSchemaConfigError(msg)) {
+        throw err
+      }
+    }
   }
 }
 
