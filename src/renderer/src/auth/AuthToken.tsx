@@ -7,8 +7,6 @@ import {
   fetchCloudUserProfile
 } from '@renderer/services/cloud-auth'
 
-let hasBootSignOutRun = false
-
 function isSchemaConfigError(message: string): boolean {
   const m = message.toLowerCase()
   return (
@@ -26,13 +24,6 @@ export default function AuthInitializer() {
   useEffect(() => {
     const init = async () => {
       try {
-        // Force fresh login once per app boot.
-        // React StrictMode re-runs effects in dev; this prevents sign-out loops.
-        if (!hasBootSignOutRun) {
-          hasBootSignOutRun = true
-          await supabase.auth.signOut()
-        }
-
         const {
           data: { session }
         } = await supabase.auth.getSession()
