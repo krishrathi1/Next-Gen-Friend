@@ -108,11 +108,6 @@ const NotesView = ({ glassPanel }: { glassPanel?: string }) => {
     }, 500)
   }
 
-  const deleteNote = async (filename: string, e: React.MouseEvent) => {
-    e.stopPropagation()
-    await window.electron.ipcRenderer.invoke('delete-note', filename)
-    fetchNotes()
-    if (selectedNote?.filename === filename) setSelectedNote(null)
   }
 
   return (
@@ -167,12 +162,7 @@ const NotesView = ({ glassPanel }: { glassPanel?: string }) => {
                   </p>
                 </div>
 
-                <button
-                  onClick={(e) => deleteNote(note.filename, e)}
-                  className="opacity-0 group-hover:opacity-100 p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
-                >
-                  <RiDeleteBinLine size={14} />
-                </button>
+                </div>
               </div>
             ))
           )}

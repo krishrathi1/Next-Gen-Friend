@@ -64,23 +64,6 @@ const GalleryView = () => {
   }, [page, allImages])
 
 
-  const deleteImage = async (filename: string, e?: React.MouseEvent) => {
-    e?.stopPropagation()
-    await window.electron.ipcRenderer.invoke('delete-image', filename)
-
-    if (selectedImage) {
-      const currentIndex = allImages.findIndex((img) => img.filename === selectedImage.filename)
-      const nextImage = allImages[currentIndex + 1] || allImages[currentIndex - 1]
-
-      if (nextImage) {
-        setSelectedImage(nextImage)
-      } else {
-        setSelectedImage(null)
-      }
-    }
-    fetchGallery()
-  }
-
   const openLocation = async (path: string, e?: React.MouseEvent) => {
     e?.stopPropagation()
     await window.electron.ipcRenderer.invoke('open-image-location', path)
@@ -217,13 +200,6 @@ const GalleryView = () => {
                       >
                         <RiFolderOpenLine size={14} />
                       </button>
-                      <button
-                        onClick={(e) => deleteImage(img.filename, e)}
-                        className="p-2 bg-white/10 text-white rounded-lg hover:bg-red-600 hover:text-white transition-all backdrop-blur-md border border-white/10"
-                        title="Delete Image"
-                      >
-                        <RiDeleteBinLine size={14} />
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -315,15 +291,6 @@ const GalleryView = () => {
                     className="cursor-pointer flex items-center gap-2 px-6 py-2.5 bg-blue-900/20 hover:bg-blue-600 text-blue-200 hover:text-white rounded-xl text-xs font-bold tracking-wider transition-all border border-blue-500/20 hover:border-blue-500"
                   >
                     <RiDownloadLine size={16} /> SAVE COPY
-                  </motion.button>
-
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => deleteImage(selectedImage.filename)}
-                    className="cursor-pointer flex items-center gap-2 px-6 py-2.5 bg-red-900/20 hover:bg-red-600 text-red-200 hover:text-white rounded-xl text-xs font-bold tracking-wider transition-all border border-red-500/20 hover:border-red-500"
-                  >
-                    <RiDeleteBinLine size={16} /> DELETE
                   </motion.button>
                 </div>
               </div>

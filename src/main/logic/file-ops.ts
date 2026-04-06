@@ -16,10 +16,6 @@ export default function registerFileOps(ipcMain: IpcMain) {
           await fs.rename(sourcePath, destPath)
           return `Success: Moved to ${destPath}`
 
-        case 'delete':
-          await fs.rm(sourcePath, { recursive: true, force: true })
-          return `Success: Deleted ${sourcePath}`
-
         default:
           return `Error: Unknown operation '${operation}'`
       }

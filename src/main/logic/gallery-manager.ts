@@ -63,19 +63,6 @@ export default function registerGalleryHandlers(ipcMain: IpcMain) {
     }
   })
 
-  ipcMain.handle('delete-image', async (_event, filename) => {
-    try {
-      const filePath = path.join(GALLERY_DIR, filename)
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath)
-        return true
-      }
-      return false
-    } catch (e) {
-      return false
-    }
-  })
-
   ipcMain.handle('open-image-location', async (_event, filePath) => {
     shell.showItemInFolder(filePath)
   })

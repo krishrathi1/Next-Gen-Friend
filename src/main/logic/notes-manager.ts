@@ -47,17 +47,4 @@ export default function registerNotesHandlers(ipcMain: IpcMain) {
       return []
     }
   })
-
-  ipcMain.handle('delete-note', async (_event, filename) => {
-    try {
-      const filePath = path.join(NOTES_DIR, filename)
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath)
-        return true
-      }
-      return false
-    } catch (e) {
-      return false
-    }
-  })
 }
