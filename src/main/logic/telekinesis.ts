@@ -1,9 +1,29 @@
 import { IpcMain, screen } from 'electron'
-import { windowManager } from 'node-window-manager'
+
+let windowManagerPromise: Promise<typeof import('node-window-manager')> | null = null
+
+async function loadWindowManager() {
+  try {
+    windowManagerPromise ??= import('node-window-manager')
+    const module = await windowManagerPromise
+    return module.windowManager
+  } catch {
+    return null
+  }
+}
 
 export default function registerTelekinesis({ ipcMain }: { ipcMain: IpcMain }) {
   ipcMain.handle('teleport-windows', async (_event, commands) => {
     try {
+      const windowManager = await loadWindowManager()
+      if (!windowManager) {
+        return {
+          success: false,
+          error:
+            'Window telekinesis is unavailable because the native node-window-manager module is not built on this machine yet.'
+        }
+      }
+
       windowManager.requestAccessibility()
 
       const primaryDisplay = screen.getPrimaryDisplay()
