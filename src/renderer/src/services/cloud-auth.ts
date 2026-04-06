@@ -164,6 +164,16 @@ export async function completeOAuthFromDeepLink(rawUrl: string): Promise<void> {
   }
 
   if (!accessToken || !refreshToken) {
+    const {
+      data: { session }
+    } = await supabase.auth.getSession()
+
+    if (session?.user?.id) {
+      await ensureCloudUserProfile(session.user)
+      await enforceSingleDeviceForUser(session.user.id)
+      return
+    }
+
     throw new Error('OAuth callback did not contain a session token.')
   }
 
