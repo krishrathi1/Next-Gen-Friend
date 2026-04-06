@@ -84,13 +84,16 @@ function forwardOAuthCallback(url: string) {
 
   if (!mainWindow) return
 
+  if (mainWindow.isMinimized()) mainWindow.restore()
+  if (!mainWindow.isVisible()) mainWindow.show()
+  mainWindow.focus()
+
   if (mainWindow.webContents.isLoading()) {
     // Page is still loading; did-finish-load will pick up pendingOAuthUrl.
     return
   }
 
-  mainWindow.webContents.send('oauth-callback', url)
-  pendingOAuthUrl = null
+  mainWindow.webContents.send('oauth-callback')
 }
 
 function createWindow(): void {
@@ -117,8 +120,7 @@ function createWindow(): void {
 
   mainWindow.webContents.on('did-finish-load', () => {
     if (pendingOAuthUrl) {
-      mainWindow?.webContents.send('oauth-callback', pendingOAuthUrl)
-      pendingOAuthUrl = null
+      mainWindow?.webContents.send('oauth-callback')
     }
   })
 
@@ -261,6 +263,12 @@ app.whenReady().then(() => {
 
   ipcMain.handle('check-keys-exist', () => {
     return fs.existsSync(secureConfigPath)
+  })
+
+  ipcMain.handle('consume-pending-oauth-callback', () => {
+    const url = pendingOAuthUrl
+    pendingOAuthUrl = null
+    return url
   })
 
   ipcMain.handle('get-device-details', () => {

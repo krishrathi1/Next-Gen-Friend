@@ -21,7 +21,6 @@ import DashboardView from '../views/Dashboard'
 import PhoneView from '../views/Phone'
 import { VisionMode } from '@renderer/IndexRoot'
 
-// const AppsView = lazy(() => import('../views/APP'))
 const WorkFlowEditorView = lazy(() => import('../views/WorkFlowEditor'))
 const NotesView = lazy(() => import('../views/Notes'))
 const SettingsView = lazy(() => import('../views/Settings'))
@@ -39,7 +38,16 @@ interface EliProps {
   activeStream: MediaStream | null
 }
 
-const glassPanel = 'bg-zinc-950/40 backdrop-blur-xl border border-white/5 rounded-2xl shadow-xl'
+const TABS = [
+  { id: 'DASHBOARD', label: 'Dashboard', icon: <RiLayoutGridLine size={14} /> },
+  { id: 'Macros', label: 'Macros', icon: <RiBrainLine size={14} /> },
+  { id: 'NOTES', label: 'Notes', icon: <RiFolderOpenLine size={14} /> },
+  { id: 'GALLERY', label: 'Gallery', icon: <RiImageLine size={14} /> },
+  { id: 'PHONE', label: 'Phone', icon: <RiPhoneLine size={14} /> },
+  { id: 'SETTINGS', label: 'Settings', icon: <RiSettings4Line size={14} /> }
+]
+
+const glassPanel = 'bg-zinc-950/50 backdrop-blur-xl border border-white/[0.06] rounded-2xl shadow-xl'
 
 const ELI = (props: EliProps) => {
   const [activeTab, setActiveTab] = useState('DASHBOARD')
@@ -75,55 +83,71 @@ const ELI = (props: EliProps) => {
   }
 
   return (
-    <div className="h-screen w-full bg-black text-zinc-100 font-sans overflow-hidden select-none flex flex-col relative pb-5">
-      <div className="h-14 w-full flex items-center justify-between px-6 bg-zinc-950/80 border-b border-white/5 z-50 backdrop-blur-md">
-        <div className="hidden lg:flex items-center gap-3">
-          <RiShieldFlashLine className="text-purple-800 text-xl animate-pulse" />
+    <div className="h-screen w-full bg-[#040407] text-zinc-100 font-sans overflow-hidden select-none flex flex-col relative pb-5">
+      
+      {/* ── Top Navigation Bar ── */}
+      <div className="h-[52px] w-full flex items-center justify-between px-4 bg-[#07070d]/90 border-b border-white/[0.05] z-50 backdrop-blur-xl shrink-0">
+        
+        {/* Logo */}
+        <div className="hidden lg:flex items-center gap-2.5">
+          <div className="relative flex items-center justify-center w-7 h-7">
+            <div className="absolute w-full h-full rounded-lg bg-violet-600/10 border border-violet-500/20" />
+            <RiShieldFlashLine className="text-violet-400 relative z-10" size={16} />
+          </div>
           <div className="flex flex-col leading-none">
-            <span className="font-black tracking-[0.2em] text-sm text-zinc-100">ELI AI</span>
-            <span className="text-[11px] font-mono text-purple-800/60 tracking-widest">
-              NEURAL INTERFACE
+            <span className="font-bold tracking-[0.15em] text-[13px] text-white">ELI AI</span>
+            <span className="text-[9px] font-medium text-violet-400/50 tracking-[0.2em] uppercase">
+              Neural Interface
             </span>
           </div>
         </div>
 
-        <div className="hidden md:flex gap-2 bg-black/40 p-1 rounded-lg border border-white/5">
-          {[
-            { id: 'DASHBOARD', icon: <RiLayoutGridLine /> },
-            { id: 'Macros', icon: <RiBrainLine /> },
-            { id: 'NOTES', icon: <RiFolderOpenLine /> },
-            { id: 'GALLERY', icon: <RiImageLine /> },
-            { id: 'PHONE', icon: <RiPhoneLine /> },
-            { id: 'SETTINGS', icon: <RiSettings4Line /> }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`cursor-pointer px-5 py-1.5 text-[10px] font-bold tracking-widest rounded-md transition-all duration-300 flex items-center gap-2 ${
-                activeTab === tab.id
-                  ? 'bg-purple-800/20 text-purple-700 border border-purple-800/20 shadow-[0_0_15px_rgba(107, 33, 168,0.1)]'
-                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
-              }`}
-            >
-              {tab.icon} {tab.id}
-            </button>
-          ))}
+        {/* Tab Navigation */}
+        <div className="hidden md:flex gap-0.5 bg-white/[0.03] p-1 rounded-xl border border-white/[0.05]">
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab.id
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`relative cursor-pointer px-4 py-1.5 text-[11px] font-semibold tracking-wide rounded-lg transition-all duration-200 flex items-center gap-1.5 ${
+                  isActive
+                    ? 'bg-violet-600/15 text-violet-300 border border-violet-500/20 shadow-[0_0_12px_rgba(124,58,237,0.1)]'
+                    : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]'
+                }`}
+              >
+                <span className={`transition-colors ${isActive ? 'text-violet-400' : 'text-zinc-600'}`}>
+                  {tab.icon}
+                </span>
+                {tab.label}
+                {isActive && (
+                  <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full bg-violet-500/60" />
+                )}
+              </button>
+            )
+          })}
         </div>
 
-        <div className="flex items-center gap-6 text-[9px] font-mono font-bold opacity-60">
-          <div className="flex items-center gap-2 text-purple-800">
-            <RiWifiLine /> <span>LINKED</span>
+        {/* Status Bar */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 text-[10px] font-mono text-violet-400/60">
+            <RiWifiLine size={12} />
+            <span className="hidden sm:block tracking-wide">LINKED</span>
           </div>
-          <div className="hidden sm:flex items-center gap-2">
-            <RiBatteryChargeLine /> <span>100%</span>
+          <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-mono text-zinc-600">
+            <RiBatteryChargeLine size={12} />
+            <span>100%</span>
           </div>
-          <div className="bg-zinc-800 px-2 py-1 rounded text-zinc-300">
-            {time.toLocaleTimeString()}
+          <div className="bg-white/[0.04] border border-white/[0.06] px-2.5 py-1 rounded-md">
+            <span className="text-[10px] font-mono text-zinc-400 tabular-nums">
+              {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </span>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden relative bg-[radial-gradient(circle_at_center,var(--tw-gradient-stops))] from-zinc-900/50 via-black to-black">
+      {/* ── Content Area ── */}
+      <div className="flex-1 overflow-hidden relative bg-[radial-gradient(ellipse_at_top,rgba(124,58,237,0.04)_0%,transparent_60%)]">
         <div className={`absolute inset-0 ${activeTab === 'DASHBOARD' ? 'block' : 'hidden'}`}>
           <DashboardView
             props={props}
@@ -145,34 +169,46 @@ const ELI = (props: EliProps) => {
         </Suspense>
       </div>
 
+      {/* ── Vision Source Modal ── */}
       {showSourceModal && (
-        <div className="absolute inset-0 z-100 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className={`${glassPanel} w-96 p-1 border-purple-800/30 flex flex-col shadow-2xl`}>
-            <div className="flex items-center justify-between p-4 border-b border-white/5 bg-white/5">
-              <span className="text-xs font-bold tracking-widest text-purple-700">
-                ESTABLISH UPLINK
-              </span>
+        <div
+          className="absolute inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-md animate-float-up"
+          onClick={() => setShowSourceModal(false)}
+        >
+          <div
+            className={`${glassPanel} w-[380px] border-violet-500/15 flex flex-col overflow-hidden shadow-[0_24px_80px_rgba(0,0,0,0.6)] rounded-2xl`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.05] bg-white/[0.02]">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-violet-500 shadow-[0_0_6px_rgba(139,92,246,0.7)]" />
+                <span className="text-[11px] font-semibold tracking-widest text-violet-300 uppercase">
+                  Select Vision Source
+                </span>
+              </div>
               <button
                 onClick={() => setShowSourceModal(false)}
-                className="cursor-pointer text-zinc-500 hover:text-white"
+                className="cursor-pointer w-6 h-6 flex items-center justify-center rounded-md text-zinc-500 hover:text-white hover:bg-white/[0.08] transition-all"
               >
-                <RiCloseLine size={18} />
+                <RiCloseLine size={16} />
               </button>
             </div>
 
-            <div className="p-4 grid grid-cols-2 gap-4">
+            {/* Modal Options */}
+            <div className="p-4 grid grid-cols-2 gap-3">
               <button
                 onClick={() => {
                   props.startVision('camera')
                   setShowSourceModal(false)
                 }}
-                className="cursor-pointer group flex flex-col items-center justify-center gap-3 p-6 rounded-xl bg-black/40 border border-white/10 hover:border-purple-800/50 hover:bg-purple-800/10 transition-all"
+                className="cursor-pointer group flex flex-col items-center justify-center gap-3 p-6 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-violet-500/30 hover:bg-violet-500/[0.06] transition-all duration-200"
               >
-                <div className="p-3 rounded-full bg-zinc-900 group-hover:bg-purple-800 text-zinc-400 group-hover:text-black transition-colors">
-                  <RiCameraLine size={28} />
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-zinc-900 border border-white/[0.06] group-hover:bg-violet-600 group-hover:border-violet-500/50 group-hover:shadow-[0_0_20px_rgba(124,58,237,0.3)] text-zinc-400 group-hover:text-white transition-all duration-200">
+                  <RiCameraLine size={22} />
                 </div>
-                <span className="text-[10px] font-bold tracking-widest text-zinc-300 group-hover:text-purple-700">
-                  CAMERA FEED
+                <span className="text-[11px] font-semibold text-zinc-400 group-hover:text-violet-300 tracking-wide transition-colors">
+                  Camera Feed
                 </span>
               </button>
 
@@ -181,20 +217,20 @@ const ELI = (props: EliProps) => {
                   props.startVision('screen')
                   setShowSourceModal(false)
                 }}
-                className="cursor-pointer group flex flex-col items-center justify-center gap-3 p-6 rounded-xl bg-black/40 border border-white/10 hover:border-purple-800/50 hover:bg-purple-800/10 transition-all"
+                className="cursor-pointer group flex flex-col items-center justify-center gap-3 p-6 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-violet-500/30 hover:bg-violet-500/[0.06] transition-all duration-200"
               >
-                <div className="p-3 rounded-full bg-zinc-900 group-hover:bg-purple-800 text-zinc-400 group-hover:text-black transition-colors">
-                  <RiComputerLine size={28} />
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-zinc-900 border border-white/[0.06] group-hover:bg-violet-600 group-hover:border-violet-500/50 group-hover:shadow-[0_0_20px_rgba(124,58,237,0.3)] text-zinc-400 group-hover:text-white transition-all duration-200">
+                  <RiComputerLine size={22} />
                 </div>
-                <span className="text-[10px] font-bold tracking-widest text-zinc-300 group-hover:text-purple-700">
-                  SCREEN SHARE
+                <span className="text-[11px] font-semibold text-zinc-400 group-hover:text-violet-300 tracking-wide transition-colors">
+                  Screen Share
                 </span>
               </button>
             </div>
 
-            <div className="p-3 bg-black/20 text-center">
-              <p className="text-[9px] text-zinc-600 font-mono">
-                SELECT INPUT SOURCE FOR NEURAL PROCESSING
+            <div className="px-4 pb-4">
+              <p className="text-center text-[10px] text-zinc-600 font-mono tracking-wider">
+                Select input source for neural visual processing
               </p>
             </div>
           </div>

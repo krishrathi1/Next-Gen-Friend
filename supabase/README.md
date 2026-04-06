@@ -16,8 +16,8 @@ Notes:
 - No files in `IRIS-Web` are used or modified by this setup.
 - `user_devices` enforces one-PC binding per account.
 - `user_signin_logs` stores sign-in success/blocked events with device details.
-- IRIS-AI auth is configured to require a fresh sign-in on each app restart.
-- `users` has an INSERT policy so first-time Google users can auto-create profile rows.
+- IRIS-AI keeps the Supabase session locally so auth survives app reloads; device checks still run on startup.
+- `users` has an INSERT policy so first-time Google users can auto-create profile rows, and the schema now auto-approves accounts for app access.
 
 ### If Login Works But Data Is Not Saving
 Run this patch in Supabase SQL Editor:

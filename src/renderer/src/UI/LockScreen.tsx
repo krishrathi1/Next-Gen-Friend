@@ -4,7 +4,8 @@ import {
   RiFingerprintLine,
   RiLockPasswordLine,
   RiCameraLensLine,
-  RiAlertLine
+  RiAlertLine,
+  RiShieldFlashLine
 } from 'react-icons/ri'
 import * as faceapi from 'face-api.js'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -58,8 +59,8 @@ export default function LockScreen({ onUnlock }: LockScreenProps) {
       if (laserRef.current) {
         gsap.fromTo(
           laserRef.current,
-          { top: '0%', opacity: 0.8 },
-          { top: '100%', opacity: 0.8, duration: 2, repeat: -1, yoyo: true, ease: 'sine.inOut' }
+          { top: '0%', opacity: 0.7 },
+          { top: '100%', opacity: 0.5, duration: 2.2, repeat: -1, yoyo: true, ease: 'sine.inOut' }
         )
       }
     } else {
@@ -76,7 +77,7 @@ export default function LockScreen({ onUnlock }: LockScreenProps) {
         await videoRef.current.play().catch(() => {})
       }
     } catch (err) {
-      setAiStatus('CAMERA HARDWARE OFFLINE - USE PIN')
+      setAiStatus('CAMERA OFFLINE — USE PIN')
     }
   }
 
@@ -101,7 +102,7 @@ export default function LockScreen({ onUnlock }: LockScreenProps) {
       ])
       startScanning(isFaceSetup)
     } catch (err) {
-      setAiStatus('AI OFFLINE - USE PIN BACKUP')
+      setAiStatus('AI OFFLINE — USE PIN')
     }
   }
 
@@ -111,7 +112,6 @@ export default function LockScreen({ onUnlock }: LockScreenProps) {
 
     scanIntervalRef.current = setInterval(async () => {
       if (!videoRef.current || videoRef.current.readyState !== 4 || error) return
-
       try {
         const options = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.4 })
         const detection = await faceapi
@@ -121,9 +121,8 @@ export default function LockScreen({ onUnlock }: LockScreenProps) {
 
         if (detection) {
           const descriptorArray = Array.from(detection.descriptor)
-
           if (isFaceSetup) {
-            setAiStatus('FACE ACQUIRED. ENROLLING BIOMETRICS...')
+            setAiStatus('FACE ACQUIRED. ENROLLING...')
             await window.electron.ipcRenderer.invoke('setup-vault-face', descriptorArray)
             clearInterval(scanIntervalRef.current!)
             setNeedsFaceSetup(false)
@@ -133,15 +132,11 @@ export default function LockScreen({ onUnlock }: LockScreenProps) {
             }, 1000)
           } else {
             setAiStatus('ANALYZING BIOMETRICS...')
-            const isMatch = await window.electron.ipcRenderer.invoke(
-              'verify-vault-face',
-              descriptorArray
-            )
-
+            const isMatch = await window.electron.ipcRenderer.invoke('verify-vault-face', descriptorArray)
             if (isMatch) {
               clearInterval(scanIntervalRef.current!)
               setIsFaceMatched(true)
-              setAiStatus('IDENTITY VERIFIED. ACCESS GRANTED.')
+              setAiStatus('IDENTITY VERIFIED')
               setTimeout(() => {
                 stopCamera()
                 onUnlock()
@@ -156,10 +151,9 @@ export default function LockScreen({ onUnlock }: LockScreenProps) {
             }
           }
         } else {
-          if (!isFaceMatched && !error) setAiStatus('NO FACE IN FRAME. ALIGN CENTER.')
+          if (!isFaceMatched && !error) setAiStatus('ALIGN FACE TO CENTER...')
         }
-      } catch (scanErr) {
-      }
+      } catch (scanErr) {}
     }, 800)
   }
 
@@ -191,144 +185,198 @@ export default function LockScreen({ onUnlock }: LockScreenProps) {
     }
   }
 
-  if (isLoading) return <div className="w-screen h-screen bg-black"></div>
+  if (isLoading) return <div className="w-screen h-screen bg-[#040407]" />
 
   const headerText = error
-    ? 'SECURITY BREACH'
+    ? 'ACCESS DENIED'
     : isFaceMatched
-      ? 'AUTHORIZATION GRANTED'
+      ? 'IDENTITY VERIFIED'
       : needsPinSetup || needsFaceSetup
         ? 'INITIALIZE VAULT'
         : 'SYSTEM LOCKED'
 
   return (
     <div
-      className="flex flex-col items-center justify-center w-screen h-screen bg-black relative overflow-hidden select-none"
+      className="flex flex-col items-center justify-center w-screen h-screen bg-[#040407] relative overflow-hidden select-none"
       onClick={() => authMode === 'pin' && inputRef.current?.focus()}
     >
+      {/* Background gradient */}
       <div
-        className={`absolute inset-0 transition-colors duration-500 bg-[radial-gradient(circle_at_center,var(--tw-gradient-stops))] ${error ? 'from-red-900/40 via-red-950/10 to-black' : isFaceMatched ? 'from-purple-900/20 via-black to-black' : 'from-purple-900/5 via-black to-black'}`}
-      ></div>
+        className={`absolute inset-0 transition-all duration-700 ${
+          error
+            ? 'bg-[radial-gradient(ellipse_at_center,rgba(239,68,68,0.12)_0%,transparent_65%)]'
+            : isFaceMatched
+              ? 'bg-[radial-gradient(ellipse_at_center,rgba(124,58,237,0.12)_0%,transparent_65%)]'
+              : 'bg-[radial-gradient(ellipse_at_center,rgba(124,58,237,0.05)_0%,transparent_65%)]'
+        }`}
+      />
 
+      {/* Subtle grid pattern */}
       <div
-        className={`z-10 flex flex-col items-center gap-8 p-12 w-150 rounded-3xl backdrop-blur-xl border transition-all duration-300 ${error ? 'border-red-500/80 bg-red-950/40 shadow-[0_0_80px_rgba(239,68,68,0.3)]' : isFaceMatched ? 'border-purple-800/40 bg-purple-950/20 shadow-[0_0_50px_rgba(107, 33, 168,0.3)]' : 'border-purple-800/10 bg-zinc-950/60 shadow-2xl'}`}
+        className="absolute inset-0 opacity-[0.015]"
+        style={{
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px)',
+          backgroundSize: '40px 40px'
+        }}
+      />
+
+      {/* Lock Card */}
+      <div
+        className={`relative z-10 flex flex-col items-center gap-7 p-10 w-[500px] max-w-[92vw] rounded-3xl backdrop-blur-xl border transition-all duration-300 ${
+          error
+            ? 'border-red-500/30 bg-red-950/20 shadow-[0_0_80px_rgba(239,68,68,0.12)]'
+            : isFaceMatched
+              ? 'border-violet-500/30 bg-violet-950/10 shadow-[0_0_60px_rgba(124,58,237,0.15)]'
+              : 'border-white/[0.07] bg-[#09090e]/80 shadow-[0_24px_80px_rgba(0,0,0,0.6)]'
+        }`}
       >
-        <div className="text-center space-y-3">
+        {/* Logo mark */}
+        <div className="flex items-center gap-2 absolute top-5 left-5 opacity-40">
+          <RiShieldFlashLine size={14} className="text-violet-400" />
+          <span className="text-[9px] font-mono tracking-widest text-zinc-500">ELI OS</span>
+        </div>
+
+        {/* Header Text */}
+        <div className="text-center space-y-2 mt-2">
           <h1
-            className={`text-2xl font-black tracking-[0.4em] transition-colors flex items-center justify-center gap-3 ${error ? 'text-red-500' : isFaceMatched ? 'text-purple-700' : 'text-zinc-100'}`}
+            className={`text-[18px] font-bold tracking-[0.3em] transition-colors flex items-center justify-center gap-2.5 ${
+              error ? 'text-red-400' : isFaceMatched ? 'text-violet-300' : 'text-zinc-100'
+            }`}
           >
-            {error && <RiAlertLine size={28} className="animate-pulse" />}
+            {error && <RiAlertLine size={20} className="animate-pulse" />}
             {headerText}
           </h1>
           <div
-            className={`px-4 py-1.5 rounded-full inline-block border ${error ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-black/40 border-white/5 text-zinc-400'}`}
+            className={`inline-flex items-center px-3 py-1 rounded-full border text-[10px] font-mono tracking-widest ${
+              error
+                ? 'bg-red-500/8 border-red-500/20 text-red-400'
+                : 'bg-white/[0.03] border-white/[0.06] text-zinc-500'
+            }`}
           >
-            <p className="text-[11px] font-mono tracking-widest font-bold">
-              {authMode === 'face'
-                ? aiStatus
-                : needsPinSetup
-                  ? 'CREATE MASTER SECURE PIN'
-                  : 'AWAITING MANUAL OVERRIDE'}
-            </p>
+            {authMode === 'face'
+              ? aiStatus
+              : needsPinSetup
+                ? 'CREATE MASTER PIN'
+                : 'ENTER PIN CODE'}
           </div>
         </div>
 
-        <div className="min-h-112.5 flex items-center justify-center w-full">
+        {/* Auth Panel */}
+        <div className="min-h-[340px] flex items-center justify-center w-full">
           <AnimatePresence mode="wait">
+            {/* FACE MODE */}
             {authMode === 'face' && (
               <motion.div
                 key="face-view"
-                initial={{ opacity: 0, scale: 0.8 }}
+                initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ duration: 0.3 }}
-                className={`relative flex items-center justify-center w-100 h-100 rounded-2xl border-[3px] overflow-hidden transition-colors duration-300 bg-black ${error ? 'border-red-500/80 shadow-[0_0_50px_rgba(239,68,68,0.4)]' : 'border-purple-800/30 shadow-[0_0_40px_rgba(107, 33, 168,0.15)]'}`}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.25 }}
+                className={`relative flex items-center justify-center w-80 h-80 rounded-3xl border-2 overflow-hidden bg-black transition-all duration-300 ${
+                  error
+                    ? 'border-red-500/50 shadow-[0_0_40px_rgba(239,68,68,0.2)]'
+                    : isFaceMatched
+                      ? 'border-violet-500/50 shadow-[0_0_40px_rgba(124,58,237,0.2)]'
+                      : 'border-white/[0.08] shadow-[0_0_30px_rgba(0,0,0,0.6)]'
+                }`}
               >
                 <video
                   ref={videoRef}
-                  className={`absolute inset-0 w-full h-full object-cover -scale-x-100 transition-opacity duration-300 ${error ? 'opacity-40 grayscale' : 'opacity-90'}`}
+                  className={`absolute inset-0 w-full h-full object-cover -scale-x-100 transition-opacity duration-300 ${
+                    error ? 'opacity-30 grayscale' : 'opacity-85'
+                  }`}
                   autoPlay
                   muted
                   playsInline
                 />
 
+                {/* Laser scan line */}
                 {isScanning && !isFaceMatched && (
                   <div
                     ref={laserRef}
-                    className={`absolute left-0 w-full h-0.75 z-20 transition-colors duration-300 ${error ? 'bg-red-500 shadow-[0_0_20px_#ef4444,0_0_40px_#ef4444]' : 'bg-purple-700 shadow-[0_0_20px_#9333ea,0_0_40px_#9333ea]'}`}
-                  ></div>
+                    className={`absolute left-0 w-full h-px z-20 transition-colors duration-300 ${
+                      error
+                        ? 'bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.8),0_0_24px_rgba(239,68,68,0.4)]'
+                        : 'bg-violet-500 shadow-[0_0_12px_rgba(124,58,237,0.8),0_0_24px_rgba(124,58,237,0.4)]'
+                    }`}
+                  />
                 )}
 
-                <div
-                  className={`absolute top-4 left-4 w-8 h-8 border-t-[3px] border-l-[3px] z-10 transition-colors duration-300 ${error ? 'border-red-500' : 'border-purple-800'}`}
-                ></div>
-                <div
-                  className={`absolute top-4 right-4 w-8 h-8 border-t-[3px] border-r-[3px] z-10 transition-colors duration-300 ${error ? 'border-red-500' : 'border-purple-800'}`}
-                ></div>
-                <div
-                  className={`absolute bottom-4 left-4 w-8 h-8 border-b-[3px] border-l-[3px] z-10 transition-colors duration-300 ${error ? 'border-red-500' : 'border-purple-800'}`}
-                ></div>
-                <div
-                  className={`absolute bottom-4 right-4 w-8 h-8 border-b-[3px] border-r-[3px] z-10 transition-colors duration-300 ${error ? 'border-red-500' : 'border-purple-800'}`}
-                ></div>
+                {/* Corner brackets */}
+                {[
+                  'top-3 left-3 border-t-2 border-l-2',
+                  'top-3 right-3 border-t-2 border-r-2',
+                  'bottom-3 left-3 border-b-2 border-l-2',
+                  'bottom-3 right-3 border-b-2 border-r-2'
+                ].map((pos, i) => (
+                  <div
+                    key={i}
+                    className={`absolute w-7 h-7 z-10 transition-colors duration-300 ${pos} ${
+                      error ? 'border-red-500/70' : isFaceMatched ? 'border-violet-400' : 'border-violet-600/50'
+                    }`}
+                  />
+                ))}
 
+                {/* Matched overlay */}
                 {isFaceMatched && (
-                  <div className="absolute inset-0 bg-purple-800/30 flex items-center justify-center backdrop-blur-md z-30">
-                    <RiFingerprintLine size={90} className="text-purple-700 animate-in zoom-in" />
+                  <div className="absolute inset-0 bg-violet-800/25 flex items-center justify-center backdrop-blur-sm z-30">
+                    <RiFingerprintLine size={72} className="text-violet-400 drop-shadow-[0_0_20px_rgba(124,58,237,0.6)]" />
                   </div>
                 )}
 
+                {/* Error overlay */}
                 {error && (
-                  <div className="absolute inset-0 bg-red-500/20 flex flex-col items-center justify-center backdrop-blur-sm z-30">
-                    <RiAlertLine size={72} className="text-red-500 mb-2" />
-                    <span className="text-red-400 font-bold tracking-widest text-xs">
-                      INTRUDER ALERT
-                    </span>
+                  <div className="absolute inset-0 bg-red-500/15 flex flex-col items-center justify-center backdrop-blur-sm z-30">
+                    <RiAlertLine size={56} className="text-red-400 mb-2" />
+                    <span className="text-red-400 font-bold tracking-widest text-[11px] font-mono">INTRUDER ALERT</span>
                   </div>
                 )}
               </motion.div>
             )}
 
+            {/* PIN MODE */}
             {authMode === 'pin' && (
               <motion.div
                 key="pin-view"
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-                className="flex flex-col items-center gap-8"
+                exit={{ opacity: 0, y: -16 }}
+                transition={{ duration: 0.25 }}
+                className="flex flex-col items-center gap-10"
               >
+                {/* Lock icon */}
                 <div
-                  className={`p-8 rounded-full transition-colors duration-300 ${error ? 'text-red-500 bg-red-500/10 shadow-[0_0_40px_rgba(239,68,68,0.2)]' : 'text-purple-700 bg-purple-800/10 shadow-[0_0_40px_rgba(107, 33, 168,0.2)]'}`}
+                  className={`p-7 rounded-3xl transition-all duration-300 ${
+                    error
+                      ? 'text-red-400 bg-red-500/8 shadow-[0_0_40px_rgba(239,68,68,0.1)] border border-red-500/15'
+                      : 'text-violet-400 bg-violet-600/8 shadow-[0_0_40px_rgba(124,58,237,0.1)] border border-violet-500/15'
+                  }`}
                 >
-                  {needsPinSetup ? (
-                    <RiLockPasswordLine size={64} />
-                  ) : (
-                    <RiShieldKeyholeLine size={64} />
-                  )}
+                  {needsPinSetup ? <RiLockPasswordLine size={52} /> : <RiShieldKeyholeLine size={52} />}
                 </div>
 
-                <div className="flex gap-6 my-4">
+                {/* PIN dots */}
+                <div className="flex gap-5">
                   {[0, 1, 2, 3].map((index) => {
                     const isFilled = pin.length > index
                     const isActive = pin.length === index && !error
                     return (
                       <div
                         key={index}
-                        className={`w-16 h-20 flex items-center justify-center text-3xl rounded-xl border-2 transition-all duration-300 ${
+                        className={`w-14 h-16 flex items-center justify-center text-2xl rounded-2xl border-2 transition-all duration-200 ${
                           isFilled
                             ? error
-                              ? 'border-red-500 bg-red-500/10 text-red-500 shadow-[0_0_20px_rgba(239,68,68,0.4)]'
-                              : 'border-purple-700 bg-purple-800/10 text-purple-700 shadow-[0_0_20px_rgba(107, 33, 168,0.4)]'
+                              ? 'border-red-500/60 bg-red-500/8 text-red-400 shadow-[0_0_16px_rgba(239,68,68,0.2)]'
+                              : 'border-violet-500/50 bg-violet-600/10 text-violet-300 shadow-[0_0_16px_rgba(124,58,237,0.2)] scale-105'
                             : isActive
-                              ? 'border-purple-800/50 bg-black/60 shadow-[0_0_20px_rgba(107, 33, 168,0.1)] scale-105'
-                              : 'border-white/5 bg-black/40 text-zinc-700'
+                              ? 'border-violet-500/30 bg-black/50 scale-[1.02]'
+                              : 'border-white/[0.06] bg-black/30 text-zinc-700'
                         }`}
                       >
                         {isFilled ? (
-                          <span className="animate-in zoom-in duration-200">●</span>
+                          <span className="animate-in zoom-in duration-150">●</span>
                         ) : isActive ? (
-                          <span className="animate-pulse text-purple-800/50">|</span>
+                          <span className="animate-pulse text-violet-500/40">|</span>
                         ) : (
                           ''
                         )}
@@ -341,6 +389,7 @@ export default function LockScreen({ onUnlock }: LockScreenProps) {
           </AnimatePresence>
         </div>
 
+        {/* Mode Switch */}
         {!isFaceMatched && (
           <button
             onClick={() => {
@@ -352,31 +401,29 @@ export default function LockScreen({ onUnlock }: LockScreenProps) {
                 setPin('')
               }
             }}
-            className="mt-4 px-8 py-3 rounded-full border border-zinc-800 bg-black text-[11px] font-bold tracking-[0.2em] text-zinc-400 hover:text-purple-700 hover:border-purple-800/50 hover:bg-purple-800/10 transition-all flex items-center gap-3 shadow-lg"
+            className="px-6 py-2.5 rounded-full border border-zinc-800 bg-transparent text-[10px] font-semibold tracking-[0.15em] text-zinc-500 hover:text-violet-300 hover:border-violet-500/30 hover:bg-violet-600/[0.06] transition-all flex items-center gap-2 shadow-lg"
           >
-            {authMode === 'face' ? (
-              <RiLockPasswordLine size={16} />
-            ) : (
-              <RiCameraLensLine size={16} />
-            )}
-            {authMode === 'face' ? 'MANUAL OVERRIDE (PIN)' : 'ENABLE OPTICS (FACE ID)'}
+            {authMode === 'face' ? <RiLockPasswordLine size={13} /> : <RiCameraLensLine size={13} />}
+            {authMode === 'face' ? 'Use PIN Instead' : 'Use Face ID'}
           </button>
         )}
 
+        {/* Hidden PIN input */}
         <input
           ref={inputRef}
           type="text"
           pattern="\d*"
           value={pin}
           onChange={handlePinChange}
-          className="opacity-0 absolute -left-2499.75"
+          className="opacity-0 absolute -left-[9999px]"
           maxLength={4}
           autoComplete="off"
         />
       </div>
 
-      <div className="absolute bottom-8 text-[10px] font-mono tracking-widest text-zinc-600 uppercase">
-        IRIS Kernel Security V3.5 • Biometric Linked
+      {/* Footer */}
+      <div className="absolute bottom-6 text-[9px] font-mono tracking-widest text-zinc-700 uppercase">
+        IRIS Kernel Security V3.5 · Biometric Linked
       </div>
     </div>
   )

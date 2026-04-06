@@ -14,10 +14,10 @@ CREATE TABLE IF NOT EXISTS public.users (
     name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
     tier user_tier DEFAULT 'FREE',
-    -- 'pending'  → awaiting admin approval
-    -- 'approved' → allowed into the app
+    -- 'approved' → allowed into the app immediately
+    -- 'pending'  → legacy value retained for backwards compatibility
     -- 'rejected' → blocked
-    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    status TEXT NOT NULL DEFAULT 'approved' CHECK (status IN ('pending', 'approved', 'rejected')),
     verified BOOLEAN DEFAULT FALSE,
     hwids TEXT[] DEFAULT '{}',
     token_version INTEGER DEFAULT 1,
@@ -108,7 +108,7 @@ BEGIN
         COALESCE(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', 'IRIS User'),
         new.email,
         new.raw_user_meta_data->>'sub',
-        'pending'
+        'approved'
     )
     ON CONFLICT (id) DO NOTHING;
     RETURN new;
@@ -117,11 +117,14 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Migration: add status column if it doesn't exist yet (safe to run on existing DB)
 DO $$ BEGIN
-    ALTER TABLE public.users ADD COLUMN status TEXT NOT NULL DEFAULT 'pending'
+    ALTER TABLE public.users ADD COLUMN status TEXT NOT NULL DEFAULT 'approved'
         CHECK (status IN ('pending', 'approved', 'rejected'));
 EXCEPTION
     WHEN duplicate_column THEN null;
 END $$;
+
+ALTER TABLE public.users ALTER COLUMN status SET DEFAULT 'approved';
+UPDATE public.users SET status = 'approved' WHERE status = 'pending';
 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created

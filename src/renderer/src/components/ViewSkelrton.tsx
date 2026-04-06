@@ -2,29 +2,33 @@ import { RiLoader4Line } from 'react-icons/ri'
 
 const ViewSkeleton = () => {
   return (
-    <div className="w-full h-full p-8 animate-in fade-in duration-500">
-      <div className="w-full h-full bg-zinc-950/40 backdrop-blur-xl border border-white/5 rounded-2xl shadow-xl p-6 flex flex-col gap-6 relative overflow-hidden">
-        <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-linear-to-r from-transparent via-white/5 to-transparent z-10" />
+    <div className="w-full h-full p-5 animate-in fade-in duration-300">
+      <div className="w-full h-full bg-[#09090e]/80 backdrop-blur-xl border border-white/[0.05] rounded-2xl shadow-xl p-6 flex flex-col gap-6 relative overflow-hidden">
+        {/* Shimmer sweep */}
+        <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-white/[0.03] to-transparent z-10 pointer-events-none" />
 
-        <div className="flex items-center gap-4 border-b border-white/5 pb-6">
-          <div className="w-12 h-12 rounded-xl bg-white/5 animate-pulse" />
-          <div className="flex flex-col gap-2">
-            <div className="w-48 h-6 bg-white/5 rounded animate-pulse" />
-            <div className="w-24 h-3 bg-white/5 rounded animate-pulse" />
+        {/* Header skeleton */}
+        <div className="flex items-center gap-4 border-b border-white/[0.05] pb-5">
+          <div className="w-11 h-11 rounded-xl skeleton" />
+          <div className="flex flex-col gap-2.5">
+            <div className="w-44 h-4 skeleton rounded-lg" />
+            <div className="w-24 h-2.5 skeleton rounded-md" />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-6 flex-1">
-          <div className="bg-white/5 rounded-xl animate-pulse h-full opacity-50" />
-          <div className="flex flex-col gap-6">
-            <div className="bg-white/5 rounded-xl animate-pulse h-32 opacity-50" />
-            <div className="bg-white/5 rounded-xl animate-pulse flex-1 opacity-50" />
+        {/* Content skeleton */}
+        <div className="grid grid-cols-2 gap-4 flex-1">
+          <div className="skeleton rounded-xl opacity-40" />
+          <div className="flex flex-col gap-4">
+            <div className="skeleton rounded-xl h-28 opacity-40" />
+            <div className="skeleton rounded-xl flex-1 opacity-25" />
           </div>
         </div>
 
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-purple-800/50">
-          <RiLoader4Line className="animate-spin text-4xl" />
-          <span className="text-[10px] tracking-[0.3em] font-mono">INITIALIZING MODULE...</span>
+        {/* Loading indicator */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 text-violet-500/40 pointer-events-none">
+          <RiLoader4Line className="animate-spin text-3xl" />
+          <span className="text-[9px] tracking-[0.3em] font-mono text-violet-400/30">INITIALIZING MODULE...</span>
         </div>
       </div>
     </div>
