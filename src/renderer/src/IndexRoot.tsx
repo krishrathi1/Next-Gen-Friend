@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import MiniOverlay from './components/MiniOverlay'
 import { irisService } from './services/Iris-voice-ai'
 import { getScreenSourceId } from './hooks/CaptureDesktop'
-import IRIS from './UI/IRIS'
+import ELI from './UI/IRIS'
 import TerminalOverlay from './components/TerminalOverlay'
 import LeafletMapWidget from './Widgets/MapView'
 import ImageWidget from './Widgets/ImageWidget'
@@ -188,7 +188,7 @@ const IndexRoot = () => {
     <div className="flex flex-col h-screen w-screen bg-black overflow-hidden relative border border-purple-800/20 rounded-xl">
       <TitleBar />
       <div className="flex-1 relative">
-        <IRIS
+        <ELI
           isSystemActive={isSystemActive}
           toggleSystem={toggleSystem}
           isMicMuted={isMicMuted}

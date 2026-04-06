@@ -27,7 +27,7 @@ const NotesView = lazy(() => import('../views/Notes'))
 const SettingsView = lazy(() => import('../views/Settings'))
 const GalleryView = lazy(() => import('../views/Gallery'))
 
-interface IrisProps {
+interface EliProps {
   isSystemActive: boolean
   toggleSystem: () => void
   isMicMuted: boolean
@@ -41,7 +41,7 @@ interface IrisProps {
 
 const glassPanel = 'bg-zinc-950/40 backdrop-blur-xl border border-white/5 rounded-2xl shadow-xl'
 
-const IRIS = (props: IrisProps) => {
+const ELI = (props: EliProps) => {
   const [activeTab, setActiveTab] = useState('DASHBOARD')
   const [stats, setStats] = useState<any>(null)
   const [time, setTime] = useState<Date>(new Date())
@@ -204,4 +204,4 @@ const IRIS = (props: IrisProps) => {
   )
 }
 
-export default IRIS
+export default ELI
