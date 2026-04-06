@@ -1,10 +1,15 @@
 import { motion } from 'framer-motion'
 import { Cpu, ShieldCheck } from 'lucide-react'
 import { FcGoogle } from 'react-icons/fc'
+import { startGoogleOAuth } from '@renderer/services/cloud-auth'
 
 export default function LoginPage() {
-  const handleGoogleLogin = () => {
-    window.open(`${import.meta.env.VITE_BACKEND_KEY}/users/google`, '_blank')
+  const handleGoogleLogin = async () => {
+    try {
+      await startGoogleOAuth()
+    } catch (error: any) {
+      alert(error?.message || 'Google sign-in failed.')
+    }
   }
 
   const containerVariants = {

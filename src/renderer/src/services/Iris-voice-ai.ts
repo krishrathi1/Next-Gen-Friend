@@ -59,7 +59,7 @@ import { draftEmail, readEmails, sendEmail } from '@renderer/functions/gmail-man
 import { playSpotifyMusic } from '@renderer/functions/Sporify-manager'
 import { executeSmartDropZones } from '@renderer/functions/DropZone-handler-api'
 import { executeLockSystem } from '@renderer/handlers/LockSystem-handler'
-import AxiosInstance from '@renderer/config/AxiosInstance'
+import { useAuthStore } from '@renderer/store/auth-store'
 
 export class GeminiLiveService {
   public socket: WebSocket | null = null
@@ -107,14 +107,10 @@ export class GeminiLiveService {
       email: 'Not linked'
     }
 
-    try {
-      const res = await AxiosInstance.get('/users/me', { timeout: 3000 })
-      if (res.data) {
-        cloudUser.name = res.data?.user?.name || cloudUser.name
-        cloudUser.email = res.data?.user?.email || cloudUser.email
-      }
-    } catch (e) {
-      
+    const authUser = useAuthStore.getState().user
+    if (authUser) {
+      cloudUser.name = authUser.name || cloudUser.name
+      cloudUser.email = authUser.email || cloudUser.email
     }
 
     const history = await getHistory()

@@ -1,15 +1,15 @@
 import './assets/main.css'
 
-import React, { JSX, StrictMode, useEffect, useState } from 'react'
+import React, { JSX, StrictMode, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
-import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 
 import LockScreen from './UI/LockScreen'
 import LoginPage from './auth/Login'
-import { useAuthStore } from './store/auth-store'
-import AxiosInstance from './config/AxiosInstance'
 import AuthInitializer from './auth/AuthToken'
 import IndexRoot from './IndexRoot'
+import { completeOAuthFromDeepLink } from './services/cloud-auth'
+import { useAuthStore } from './store/auth-store'
 
 const electronAPI = (window as any).electron?.ipcRenderer
 
@@ -42,10 +42,20 @@ class SystemErrorBoundary extends React.Component<
 let isSessionUnlocked = true
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+  const accessToken = useAuthStore((s) => s.accessToken)
+  const isAuthInitialized = useAuthStore((s) => s.isAuthInitialized)
+
+  if (!isAuthInitialized) return null
+  if (!accessToken) return <Navigate to="/login" replace />
   return children
 }
 
 const PublicRoute = ({ children }: { children: JSX.Element }) => {
+  const accessToken = useAuthStore((s) => s.accessToken)
+  const isAuthInitialized = useAuthStore((s) => s.isAuthInitialized)
+
+  if (!isAuthInitialized) return null
+  if (accessToken) return <Navigate to="/" replace />
   return children
 }
 
@@ -54,19 +64,10 @@ const AppRouter = () => {
 
   useEffect(() => {
     if (electronAPI) {
-      electronAPI.on('oauth-callback', (_event: any, url: string) => {
+      electronAPI.on('oauth-callback', async (_event: any, url: string) => {
         try {
-          const urlObj = new URL(url.replace('iris://', 'http://localhost/'))
-
-          const refreshToken = urlObj.searchParams.get('refreshToken')
-          const accessToken = urlObj.searchParams.get('accessToken')
-
-          if (refreshToken && accessToken) {
-            localStorage.setItem('iris_cloud_token', refreshToken)
-            useAuthStore.getState().setAccessToken(accessToken)
-
-            navigate('/')
-          }
+          await completeOAuthFromDeepLink(url)
+          navigate('/')
         } catch (e) {
         }
       })

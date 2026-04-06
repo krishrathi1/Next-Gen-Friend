@@ -1,41 +1,76 @@
 import { useEffect } from 'react'
 import { useAuthStore } from '../store/auth-store'
-import AxiosInstance from '../config/AxiosInstance'
+import { supabase } from '@renderer/config/supabase'
+import { fetchCloudUserProfile } from '@renderer/services/cloud-auth'
 
 export default function AuthInitializer() {
   const setAccessToken = useAuthStore((s) => s.setAccessToken)
+  const setUser = useAuthStore((s) => s.setUser)
   const setIsAuthInitialized = useAuthStore((s: any) => s.setIsAuthInitialized)
 
   useEffect(() => {
     const init = async () => {
       try {
-        const storedRefreshToken = localStorage.getItem('iris_cloud_token')
+        const {
+          data: { session }
+        } = await supabase.auth.getSession()
 
-        if (!storedRefreshToken) {
-          setAccessToken(null)
-          return
-        }
-
-        const res = await AxiosInstance.post('/users/refresh-token', {
-          refreshToken: storedRefreshToken
-        })
-
-        const accessToken = res.data.accessToken
+        const accessToken = session?.access_token || null
         setAccessToken(accessToken)
 
-        if (res.data.refreshToken) {
-          localStorage.setItem('iris_cloud_token', res.data.refreshToken)
+        if (session?.user?.id) {
+          const profile = await fetchCloudUserProfile(session.user.id)
+          if (profile) {
+            setUser(profile)
+          } else {
+            setUser({
+              id: session.user.id,
+              name: (session.user.user_metadata?.full_name as string) || 'IRIS User',
+              email: session.user.email || 'Not linked',
+              tier: 'FREE',
+              verified: session.user.email_confirmed_at != null
+            })
+          }
+        } else {
+          setUser(null)
         }
       } catch (err) {
         setAccessToken(null)
-        localStorage.removeItem('iris_cloud_token')
+        setUser(null)
       } finally {
         if (setIsAuthInitialized) setIsAuthInitialized(true)
       }
     }
 
     init()
-  }, [setAccessToken, setIsAuthInitialized])
+
+    const {
+      data: { subscription }
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setAccessToken(session?.access_token || null)
+
+      if (session?.user?.id) {
+        const profile = await fetchCloudUserProfile(session.user.id)
+        if (profile) {
+          setUser(profile)
+        } else {
+          setUser({
+            id: session.user.id,
+            name: (session.user.user_metadata?.full_name as string) || 'IRIS User',
+            email: session.user.email || 'Not linked',
+            tier: 'FREE',
+            verified: session.user.email_confirmed_at != null
+          })
+        }
+      } else {
+        setUser(null)
+      }
+
+      if (setIsAuthInitialized) setIsAuthInitialized(true)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [setAccessToken, setIsAuthInitialized, setUser])
 
   return null
 }
