@@ -4,12 +4,10 @@
 
 # IRIS: The Neural Forge
 ### Autonomous Operating System Layer & Intelligence Forge
-**Execute intent across Kernel, Web, and Mobile with zero-latency neural routing.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg?style=for-the-badge)](https://www.typescriptlang.org/)
 [![Electron](https://img.shields.io/badge/Electron-39.x-47848F.svg?style=for-the-badge)](https://www.electronjs.org/)
-[![Gemini](https://img.shields.io/badge/GenAI-Gemini_1.5_Pro-red.svg?style=for-the-badge)](https://deepmind.google/technologies/gemini/)
 
 ---
 
@@ -19,116 +17,189 @@
 
 ## 🌌 Executive Philosophy
 
-**IRIS** (Intelligent Real-time Integrated System) is not a standalone application; it is a **Neural OS Layer**. Traditional OS interfaces are built for manual input (CLI/GUI). IRIS abstracts these into a **Neural Command Plane**, where high-level intent is decomposed into deterministic system calls.
+**IRIS** (Intelligent Real-time Integrated System) is a **Neural OS Layer**. It abstracts the traditional GUI into a **Neural Command Plane**, allowing high-level intent to be decomposed into deterministic system execution.
 
 ---
 
-## 🏗️ Technical Architecture: The Dual-Process Model
+## 🏗️ Deep Architecture: The Multi-Process Core
 
-IRIS leverages Electron's multi-process architecture to ensure **Kernel-level stability** and **UI responsiveness**.
+<img src="assets/architecture_3d.png" alt="IRIS 3D Architecture" width="100%" />
 
-### 1. The Main Process (The Core)
-The "Heart" of IRIS. It holds privileged access to the OS.
-- **Privileged Context**: Direct access to `fs`, `child_process`, `adb-shell`, and `raw-sockets`.
-- **Logic Engine**: Houses the **Neural Router** which communicates with Gemini/Groq.
-- **Security Vault**: Manages `safeStorage` encryption for all sensitive API credentials.
+### 1. Process Topology & Security
+IRIS utilizes a **Multi-Process Architecture** to ensure that unprivileged UI code cannot directly execute system-level exploits.
 
-### 2. The Renderer Process (The Interface)
-The "Eyes and Ears" of IRIS.
-- **Voice Ingestion**: Real-time STT streaming via Web Audio API.
-- **Vision Feed**: Captures 60FPS desktop/camera frames for multimodal analysis.
-- **Widget Layer**: Floating React components (Glassmorphism UI) for real-time telemetry.
+```mermaid
+graph TD
+    subgraph "External World"
+        AD[Active Directory]
+        Net[Public Internet]
+    end
 
-### 3. The Context Bridge (IPC)
-A strictly typed, zero-trust bridge (`preload/index.ts`) that exposes only necessary handlers to the UI, preventing XSS-based system takeovers.
+    subgraph "Renderer Process (Unprivileged)"
+        Dashboard[React Dashboard]
+        Widgets[Floating Widgets]
+        STT[WebSocket Audio Stream]
+    end
 
----
+    subgraph "Preload (Context Bridge)"
+        API[Selective IPC Exposure]
+        Sanitizer[Input Sanitization]
+    end
 
-## 🔬 Core Module Deep-Dives
+    subgraph "Main Process (Privileged)"
+        Kernel[OS API Access]
+        Router[Neural Router / LLM]
+        Vault[SafeStorage Vault]
+        Scanner[File Crawler / ADB]
+    end
 
-### 🔌 Mobile Telekinesis (ADB Protocol)
-IRIS transforms your PC into a remote Android Command Center.
-- **Protocol**: Raw ADB over TCP/IP or USB.
-- **Telemetry Hash**: Real-time extraction of `dumpsys battery`, `df -h /data`, and `getprop`.
-- **Notification Hook**: Scrapes `notification --noredact` to surface smartphone alerts directly in the OS desktop.
-- **Remote Execution**:
-    - `adb-tap`: Precise coordinate touch based on screen percentage.
-    - `adb-swipe`: Directional gesture simulation for scrolling.
-    - `adb-push/pull`: Seamless bi-directional file synchronization.
-
-### 👁️ Screen Peeler (OCR Vision)
-The Vision system allows IRIS to "read" your screen and turn UI elements into actionable data.
-- **Workflow**: `desktopCapturer` -> `PNG Buffer` -> `Tesseract.js` (OCR) -> `Generative AI` (Contextualization).
-- **Ghost Coder**: A specialized vision mode that detects code on screen and injects an AI-suggestions overlay (`Ctrl+Alt+Space`).
-
-### 🕸️ Web Agent & Reality Hacker
-IRIS creates a "Synthetic Web Layer" over existing websites.
-- **Reality Hacker**: Injects custom CSS/JS to "Assimilate" any domain (GitHub, YouTube, Amazon) into the IRIS aesthetic.
-- **Smart Routing**: Local-first bookmarking and keyword-based URL redirection.
-- **Puppeteer Stealth**: Uses `puppeteer-extra-plugin-stealth` to bypass bot detection for deep research and summarization.
-
-### 🧠 Semantic Memory (LanceDB RAG)
-Local knowledge retrieval that never leaves your machine.
-- **Vector Database**: Uses **LanceDB** for high-speed local embeddings.
-- **Embedding Pipeline**: `Xenova/all-MiniLM-L6-v2` runs locally via Transformers.js.
-- **Oracle Mode**: Performs a hybrid search (Keywords + Semantic) to find files across TBs of local storage in milliseconds.
-
----
-
-## 🛠️ Developer API Reference (IPC Handlers)
-
-IRIS exposes a powerful IPC API for creating new tools. Below is the exhaustive schema for `ipcMain.handle`:
-
-| Call Key | Payload Schema | Description |
-| :--- | :--- | :--- |
-| `adb-connect` | `{ ip: string, port: string }` | Establish remote Android link. |
-| `adb-telemetry` | `void` | Returns battery, storage, and model data. |
-| `google-search` | `{ query: string }` | Opens external search and returns a Puppeteer summary. |
-| `hack-website` | `{ url: string, mode: 'rewrite' \| 'emerald' }` | Injects IRIS themes into specific domains. |
-| `index-folder` | `{ folderPath: string }` | Vectorizes a directory into LanceDB. |
-| `run-terminal` | `{ command: string }` | Executes a raw shell command and returns stdout. |
-| `secure-save-keys`| `{ groqKey, geminiKey }` | Encrypts keys via `safeStorage`. |
-| `workflow-exec` | `{ name: string, nodes: [] }` | Triggers a multi-step automation sequence. |
-
----
-
-## 🤖 Workflow Automation Engine
-
-Workflows are defined as a Directed Acyclic Graph (DAG) of **Nodes** (Actions) and **Edges** (Sequence).
-
-```json
-{
-  "name": "Morning Setup",
-  "nodes": [
-    { "id": "1", "type": "open-app", "data": { "appName": "Spotify" } },
-    { "id": "2", "type": "run-term", "data": { "cmd": "npm run dev" } },
-    { "id": "3", "type": "whatsapp-msg", "data": { "text": "Starting work!" } }
-  ],
-  "edges": [{ "source": "1", "target": "2" }, { "source": "2", "target": "3" }]
-}
+    Dashboard -- "Secure Invoke" --> API
+    API --> Sanitizer
+    Sanitizer --> Router
+    Router --> Kernel
+    Router --> Vault
+    Kernel --> AD
+    Router --> Net
 ```
 
 ---
 
-## 🔒 Security Protocol: The Vault
+## 🔬 Neural Pipelines (System Low-Level)
 
-IRIS implements an **Asymmetric Local Security Layer**:
-1.  **Transport Encryption**: All communication between processes is strictly local-only.
-2.  **SafeStorage Protocol**: No plain-text API keys ever touch the disk. IRIS uses the OS-native keychain (Windows DPAPI / macOS Keychain).
-3.  **Biometric Lock**: The "System Vault" can prevent specific tool execution (e.g., `adb-tap` or `file-delete`) unless a PIN or Face-id is verified.
+### 2. Voice-First Command Routing
+How IRIS transforms biological audio waves into deterministic computer code.
+
+```mermaid
+sequenceDiagram
+    participant U as User (Biological)
+    participant R as Renderer (React)
+    participant M as Main (Electron)
+    participant L as LLM (Gemini/Groq)
+    participant OS as Operating System
+
+    U->>R: Voice Command ("Open Spotify")
+    R->>R: Web Audio Stream (PCM)
+    R->>M: IPC: audio-buffer-push
+    M->>L: Multimodal Ingestion (Frame + Audio)
+    L-->>M: Thought: Launch Process (Spotify)
+    M->>OS: spawn("Spotify.exe")
+    OS-->>M: Process PID: 1240
+    M-->>R: UI State: "System Online"
+```
+
+### 3. Vision-First Screen Ingestion (The Peeler)
+IRIS captures and "understands" your desktop content every 2 seconds.
+
+```mermaid
+graph LR
+    subgraph "Capture Loop"
+        Src[desktopCapturer] --> Buffer[PNG Buffer]
+        Buffer --> Sharp[Image Resizing]
+    end
+
+    subgraph "NLU Pipeline"
+        Sharp --> OCR[Tesseract.js OCR]
+        Sharp --> Vision[Gemini Pro Vision]
+        OCR --> Text[Contextual Strings]
+        Vision --> Objects[UI Element Mapping]
+    end
+
+    subgraph "Execution"
+        Text --> LLM[Router]
+        Objects --> Clicker[Coordinate Targeting]
+    end
+```
+
+### 4. Mobile Telekinesis (ADB Protocol)
+Direct remote control of connected Android devices via the Android Debug Bridge.
+
+```mermaid
+graph TD
+    subgraph "System PC"
+        IPC[Renderer Request] --> ADB[Main: ADB Client]
+        ADB --> Shell[execAsync('adb shell')]
+    end
+
+    subgraph "Android Device"
+        Shell --> Battery[dumpsys battery]
+        Shell --> Notifs[notification --noredact]
+        Shell --> Control[input tap/swipe]
+    end
+
+    Battery --> Telemetry[Telemetry UI]
+    Notifs --> Alerts[Desktop Toast]
+```
+
+---
+
+## 🧠 Local Memory & Hybrid RAG
+
+IRIS maintains a **Neural Forge** of local knowledge that never leaves the machine.
+
+```mermaid
+graph TD
+    subgraph "Indexing"
+        Files[Local .md / .ts / .pdf] --> Embeds[Transformers.js]
+        Embeds --> Vector[LanceDB Local Index]
+    end
+
+    subgraph "Retrieval Loop"
+        Query[User Input] --> EmbedQuery[Vector Query]
+        EmbedQuery --> DB{LanceDB}
+        DB -- "Top K Matches" --> Context[RAG Prompt]
+        Context --> LLM[Neural Response]
+    end
+```
+
+---
+
+## 🔒 Security & Vault Locking
+
+IRIS uses a **Zero-Trust Lockdown Flow** to protect your API credentials.
+
+```mermaid
+graph LR
+    subgraph "Storage"
+        Disk[iris_secure_vault.json]
+    end
+
+    subgraph "Decryption"
+        Main[Main Process] --> DPAPI[safeStorage / Keychain]
+        DPAPI --> Key[In-Memory Key]
+    end
+
+    subgraph "Usage"
+        Key --> Request[AI Provider Request]
+        Request --> Network[HTTPS/TLS]
+    end
+
+    Disk --> Main
+```
+
+---
+
+## 🛠️ Developer API Reference (Full IPC Table)
+
+| Call Key | Payload Schema | Return Type | Description |
+| :--- | :--- | :--- | :--- |
+| `index-folder` | `{ folderPath: string }` | `Promise<string>` | Vectorizes a directory. |
+| `adb-tap` | `{ xPercent: number, yPercent: number }` | `Promise<{success}>` | Remote Android touch. |
+| `run-terminal` | `{ command: string }` | `Promise<string>` | Kernel shell execution. |
+| `hack-website` | `{ url: string, mode: string }` | `Promise<{success}>` | DOM Hijacking / Emerald Theme. |
+| `secure-save-keys`| `{ groqKey, geminiKey }` | `Promise<{success}>` | Encrypted keychain write. |
 
 ---
 
 ## 🚀 Deployment & Installation
 
 ### Requirements
-- **OS**: Windows (Full support), macOS/Linux (Partial support for ADB/Automation).
-- **Environment**: `adb` must be in system PATH for Mobile Telekinesis.
+- **Hardware**: Windows (Primary), Android Device (Optional for Telekinesis).
+- **Environment**: `adb` must be in system PATH.
 
-### Quick Start
+### Full Setup
 ```bash
-# Clone and ignite
-git clone https://github.com/201Harsh/IRIS-AI.git
+# Clone the Forge
+git clone 
 npm install
 npm run dev
 ```
@@ -138,7 +209,7 @@ npm run dev
 <div align="center">
 
 ### 🛡️ Disclaimer
-IRIS possesses deep system privileges. The architect is not responsible for any "reality hacking" that leads to data loss if misused.
+IRIS possesses deep system privileges. High-level automation carries risk.
 
 **Crafted by [Team WinHAiJi]**  
 *Engineered for the next generation of biological-digital interaction.*
