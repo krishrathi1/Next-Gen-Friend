@@ -140,7 +140,7 @@ npm run dev
 ### 🛡️ Disclaimer
 IRIS possesses deep system privileges. The architect is not responsible for any "reality hacking" that leads to data loss if misused.
 
-**Crafted by [Harsh Pandey](https://github.com/201Harsh)**  
+**Crafted by [Team WinHAiJi]**  
 *Engineered for the next generation of biological-digital interaction.*
 
 </div>
