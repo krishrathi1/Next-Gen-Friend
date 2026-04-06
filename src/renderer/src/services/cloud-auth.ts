@@ -1,8 +1,17 @@
 import { supabase } from '@renderer/config/supabase'
-import type { User } from '@supabase/supabase-js'
+import type { Session, User } from '@supabase/supabase-js'
 import type { CloudUserProfile } from '@renderer/store/auth-store'
 
 const DEFAULT_REDIRECT = 'http://127.0.0.1:54321/auth/callback'
+const OAUTH_INTENT_KEY = 'iris.oauth.intent'
+const AUTH_FLASH_KEY = 'iris.auth.flash'
+
+export type OAuthMode = 'signin' | 'signup'
+export type AuthFlashMessage = { type: 'error' | 'success'; text: string }
+export type OAuthCompletionResult = { status: 'authenticated'; token: string }
+export type EmailSignUpResult =
+  | { status: 'authenticated'; token: string }
+  | { status: 'registered'; message: string }
 
 type DeviceDetails = {
   fingerprint: string
@@ -13,13 +22,39 @@ type DeviceDetails = {
   appVersion: string
 }
 
-function isSchemaConfigError(message: string): boolean {
-  const m = message.toLowerCase()
-  return (
-    m.includes('supabase table missing') ||
-    m.includes('rls policy missing') ||
-    m.includes('relation') && m.includes('does not exist')
-  )
+function storeOAuthIntent(mode: OAuthMode): void {
+  window.localStorage.setItem(OAUTH_INTENT_KEY, mode)
+}
+
+function consumeOAuthIntent(): OAuthMode {
+  const mode = window.localStorage.getItem(OAUTH_INTENT_KEY)
+  window.localStorage.removeItem(OAUTH_INTENT_KEY)
+  return mode === 'signup' ? 'signup' : 'signin'
+}
+
+export function setAuthFlashMessage(message: AuthFlashMessage): void {
+  window.localStorage.setItem(AUTH_FLASH_KEY, JSON.stringify(message))
+}
+
+export function consumeAuthFlashMessage(): AuthFlashMessage | null {
+  const raw = window.localStorage.getItem(AUTH_FLASH_KEY)
+  if (!raw) return null
+
+  window.localStorage.removeItem(AUTH_FLASH_KEY)
+
+  try {
+    const parsed = JSON.parse(raw)
+    if (
+      parsed &&
+      (parsed.type === 'error' || parsed.type === 'success') &&
+      typeof parsed.text === 'string'
+    ) {
+      return parsed as AuthFlashMessage
+    }
+  } catch {
+  }
+
+  return null
 }
 
 async function getCurrentDeviceDetails(): Promise<DeviceDetails> {
@@ -48,17 +83,25 @@ async function appendSignInLog(
   })
 }
 
+function getUserProfilePayload(user: User, overrides?: Partial<Record<'status' | 'name' | 'email', string>>) {
+  return {
+    id: user.id,
+    email: overrides?.email || user.email || '',
+    name:
+      overrides?.name ||
+      (user.user_metadata?.full_name as string) ||
+      (user.user_metadata?.name as string) ||
+      'IRIS User',
+    google_id: (user.user_metadata?.sub as string) || null,
+    verified: user.email_confirmed_at != null,
+    ...(overrides?.status ? { status: overrides.status } : {})
+  }
+}
+
 export async function ensureCloudUserProfile(user: User): Promise<void> {
-  const { error } = await supabase.from('users').upsert(
-    {
-      id: user.id,
-      email: user.email || '',
-      name: (user.user_metadata?.full_name as string) || (user.user_metadata?.name as string) || 'IRIS User',
-      google_id: (user.user_metadata?.sub as string) || null,
-      verified: user.email_confirmed_at != null
-    },
-    { onConflict: 'id' }
-  )
+  const { error } = await supabase.from('users').upsert(getUserProfilePayload(user), {
+    onConflict: 'id'
+  })
 
   if (error) {
     if ((error as any).code === '42P01') {
@@ -73,6 +116,53 @@ export async function ensureCloudUserProfile(user: User): Promise<void> {
     }
     throw new Error(error.message)
   }
+}
+
+export async function ensureUserAccessStatus(user: User): Promise<'approved' | 'rejected'> {
+  const { data, error } = await supabase
+    .from('users')
+    .select('status')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  if (error) {
+    if ((error as any).code === '42P01') {
+      throw new Error(
+        'Supabase table missing. Run IRIS-AI/supabase/schema.sql in SQL Editor first.'
+      )
+    }
+    if ((error as any).code === '42501') {
+      throw new Error(
+        'RLS policy missing for users access. Re-run IRIS-AI/supabase/schema.sql in SQL Editor.'
+      )
+    }
+    throw new Error(`Could not read user status: ${error.message}`)
+  }
+
+  if (!data || !data.status || data.status === 'pending') {
+    const { error: upsertError } = await supabase
+      .from('users')
+      .upsert({ ...getUserProfilePayload(user), status: 'approved' }, { onConflict: 'id' })
+
+    if (upsertError) {
+      if ((upsertError as any).code === '42P01') {
+        throw new Error(
+          'Supabase table missing. Run IRIS-AI/supabase/schema.sql in SQL Editor first.'
+        )
+      }
+      if ((upsertError as any).code === '42501') {
+        throw new Error(
+          'RLS policy missing for users upsert. Re-run IRIS-AI/supabase/schema.sql in SQL Editor.'
+        )
+      }
+      throw new Error(upsertError.message)
+    }
+
+    return 'approved'
+  }
+
+  await ensureCloudUserProfile(user)
+  return data.status === 'rejected' ? 'rejected' : 'approved'
 }
 
 export async function enforceSingleDeviceForUser(userId: string): Promise<void> {
@@ -127,30 +217,61 @@ export async function enforceSingleDeviceForUser(userId: string): Promise<void> 
   await appendSignInLog(userId, device, 'SIGN_IN_SUCCESS')
 }
 
-export async function startGoogleOAuth(): Promise<void> {
+async function finalizeOAuthSession(
+  session: Session | null,
+  user: User | null,
+  _intent: OAuthMode
+): Promise<OAuthCompletionResult> {
+  if (!session?.access_token || !user?.id) {
+    throw new Error('OAuth callback did not return a valid session.')
+  }
+
+  const status = await ensureUserAccessStatus(user)
+
+  if (status === 'rejected') {
+    await supabase.auth.signOut()
+    throw new Error('Your account has been rejected. Contact support.')
+  }
+
+  await enforceSingleDeviceForUser(user.id)
+
+  return {
+    status: 'authenticated',
+    token: session.access_token
+  }
+}
+
+export async function startGoogleOAuth(mode: OAuthMode = 'signin'): Promise<void> {
   const redirectTo = import.meta.env.VITE_SUPABASE_REDIRECT_URL || DEFAULT_REDIRECT
+  storeOAuthIntent(mode)
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
       redirectTo,
       skipBrowserRedirect: true,
-      queryParams: { access_type: 'offline', prompt: 'select_account' }
+      queryParams: {
+        access_type: 'offline',
+        prompt: mode === 'signup' ? 'consent' : 'select_account'
+      }
     }
   })
 
   if (error) {
+    window.localStorage.removeItem(OAUTH_INTENT_KEY)
     throw error
   }
 
   if (!data?.url) {
+    window.localStorage.removeItem(OAUTH_INTENT_KEY)
     throw new Error('Supabase did not return an OAuth URL.')
   }
 
   window.open(data.url, '_blank')
 }
 
-export async function completeOAuthFromDeepLink(rawUrl: string): Promise<string> {
+export async function completeOAuthFromDeepLink(rawUrl: string): Promise<OAuthCompletionResult> {
+  const intent = consumeOAuthIntent()
   const parsed = new URL(rawUrl.replace('iris://', 'http://localhost/'))
 
   const hash = parsed.hash.startsWith('#') ? parsed.hash.slice(1) : parsed.hash
@@ -163,51 +284,26 @@ export async function completeOAuthFromDeepLink(rawUrl: string): Promise<string>
   if (authCode) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(authCode)
     if (error) throw error
-    if (!data.session?.access_token) throw new Error('OAuth callback: no session returned after code exchange.')
-    if (data.user?.id) {
-      const status = await checkUserApprovalStatus(data.user.id)
-      if (status === 'pending') {
-        await supabase.auth.signOut()
-        throw new Error('Your account is pending admin approval. Please wait.')
-      }
-      if (status === 'rejected') {
-        await supabase.auth.signOut()
-        throw new Error('Your account has been rejected. Contact support.')
-      }
-      try {
-        await ensureCloudUserProfile(data.user)
-        await enforceSingleDeviceForUser(data.user.id)
-      } catch (err: any) {
-        const msg = err?.message || 'Failed to sync user profile.'
-        if (!isSchemaConfigError(msg)) throw err
-      }
-    }
-    return data.session.access_token
+
+    return finalizeOAuthSession(data.session, data.user, intent)
   }
 
   if (!accessToken || !refreshToken) {
-    const { data: { session } } = await supabase.auth.getSession()
+    const {
+      data: { session }
+    } = await supabase.auth.getSession()
+
     if (session?.access_token && session?.user?.id) {
-      await ensureCloudUserProfile(session.user)
-      await enforceSingleDeviceForUser(session.user.id)
-      return session.access_token
+      return finalizeOAuthSession(session, session.user, intent)
     }
+
     throw new Error('OAuth callback did not contain a session token.')
   }
 
   const { data, error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
   if (error) throw error
-  if (!data.session?.access_token) throw new Error('OAuth callback: no session after setSession.')
-  if (data.user?.id) {
-    try {
-      await ensureCloudUserProfile(data.user)
-      await enforceSingleDeviceForUser(data.user.id)
-    } catch (err: any) {
-      const msg = err?.message || 'Failed to sync user profile.'
-      if (!isSchemaConfigError(msg)) throw err
-    }
-  }
-  return data.session.access_token
+
+  return finalizeOAuthSession(data.session, data.user, intent)
 }
 
 export async function fetchCloudUserProfile(userId: string): Promise<CloudUserProfile | null> {
@@ -226,7 +322,7 @@ export async function fetchCloudUserProfile(userId: string): Promise<CloudUserPr
     name: data.name,
     email: data.email,
     tier: (data.tier || 'FREE') as 'FREE' | 'PRO',
-    status: (data.status || 'pending') as 'pending' | 'approved' | 'rejected',
+    status: (data.status || 'approved') as 'pending' | 'approved' | 'rejected',
     verified: data.verified ?? false
   }
 }
@@ -238,16 +334,29 @@ export async function checkUserApprovalStatus(userId: string): Promise<'pending'
     .eq('id', userId)
     .maybeSingle()
 
-  if (error) throw new Error(`Could not read approval status: ${error.message}`)
-  if (!data) return 'pending'
-  return (data.status || 'pending') as 'pending' | 'approved' | 'rejected'
+  if (error) {
+    if ((error as any).code === '42P01') {
+      throw new Error(
+        'Supabase table missing. Run IRIS-AI/supabase/schema.sql in SQL Editor first.'
+      )
+    }
+    if ((error as any).code === '42501') {
+      throw new Error(
+        'RLS policy missing for users select. Re-run IRIS-AI/supabase/schema.sql in SQL Editor.'
+      )
+    }
+    throw new Error(`Could not read approval status: ${error.message}`)
+  }
+
+  if (!data) return 'approved'
+  return (data.status || 'approved') as 'pending' | 'approved' | 'rejected'
 }
 
 export async function signUpWithEmail(
   email: string,
   password: string,
   name: string
-): Promise<void> {
+): Promise<EmailSignUpResult> {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -256,18 +365,37 @@ export async function signUpWithEmail(
 
   if (error) throw error
 
-  // Ensure the profile row exists with pending status.
+  // Ensure the profile row exists and is usable immediately.
   if (data.user?.id) {
     await supabase.from('users').upsert(
       {
         id: data.user.id,
         email: data.user.email || email,
         name,
-        status: 'pending',
-        verified: false
+        status: 'approved',
+        verified: data.user.email_confirmed_at != null
       },
       { onConflict: 'id' }
     )
+  }
+
+  if (data.session?.access_token && data.user?.id) {
+    const status = await ensureUserAccessStatus(data.user)
+    if (status === 'rejected') {
+      await supabase.auth.signOut()
+      throw new Error('Your account has been rejected. Contact support.')
+    }
+
+    await enforceSingleDeviceForUser(data.user.id)
+    return {
+      status: 'authenticated',
+      token: data.session.access_token
+    }
+  }
+
+  return {
+    status: 'registered',
+    message: 'Account created. If email confirmation is enabled in Supabase, confirm your email and then sign in.'
   }
 }
 
@@ -276,24 +404,14 @@ export async function signInWithEmail(email: string, password: string): Promise<
   if (error) throw error
   if (!data.session?.access_token) throw new Error('Sign-in failed: no session returned.')
 
-  const status = await checkUserApprovalStatus(data.user.id)
-  if (status === 'pending') {
-    await supabase.auth.signOut()
-    throw new Error('Your account is pending admin approval. Please wait.')
-  }
+  const status = await ensureUserAccessStatus(data.user)
   if (status === 'rejected') {
     await supabase.auth.signOut()
     throw new Error('Your account has been rejected. Contact support.')
   }
 
   if (data.user?.id) {
-    try {
-      await ensureCloudUserProfile(data.user)
-      await enforceSingleDeviceForUser(data.user.id)
-    } catch (err: any) {
-      const msg = err?.message || ''
-      if (!isSchemaConfigError(msg)) throw err
-    }
+    await enforceSingleDeviceForUser(data.user.id)
   }
 
   return data.session.access_token

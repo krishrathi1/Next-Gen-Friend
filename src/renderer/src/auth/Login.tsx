@@ -1,8 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Cpu, ShieldCheck, Mail, Lock, User } from 'lucide-react'
 import { FcGoogle } from 'react-icons/fc'
-import { startGoogleOAuth, signInWithEmail, signUpWithEmail } from '@renderer/services/cloud-auth'
+import {
+  consumeAuthFlashMessage,
+  startGoogleOAuth,
+  signInWithEmail,
+  signUpWithEmail
+} from '@renderer/services/cloud-auth'
 import { useAuthStore } from '@renderer/store/auth-store'
 import { useNavigate } from 'react-router-dom'
 
@@ -26,11 +31,30 @@ export default function LoginPage() {
   const [suPassword, setSuPassword] = useState('')
   const [suConfirm, setSuConfirm] = useState('')
 
-  const handleGoogleLogin = async () => {
+  useEffect(() => {
+    const flashMessage = consumeAuthFlashMessage()
+    if (flashMessage) {
+      setMessage(flashMessage)
+    }
+  }, [])
+
+  const handleGoogleAuth = async (mode: Tab) => {
+    setMessage(null)
+    setLoading(true)
+
     try {
-      await startGoogleOAuth()
+      await startGoogleOAuth(mode)
+      setMessage({
+        type: 'success',
+        text:
+          mode === 'signup'
+            ? 'Continue in your browser to create your Google-linked account.'
+            : 'Continue in your browser to finish Google sign-in.'
+      })
     } catch (error: any) {
       setMessage({ type: 'error', text: error?.message || 'Google sign-in failed.' })
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -62,11 +86,14 @@ export default function LoginPage() {
     }
     setLoading(true)
     try {
-      await signUpWithEmail(suEmail.trim(), suPassword, suName.trim())
-      setMessage({
-        type: 'success',
-        text: 'Account created! Your request is pending admin approval. You will be notified once approved.'
-      })
+      const result = await signUpWithEmail(suEmail.trim(), suPassword, suName.trim())
+      if (result.status === 'authenticated') {
+        setAccessToken(result.token)
+        navigate('/')
+        return
+      }
+
+      setMessage({ type: 'success', text: result.message })
       setSuName('')
       setSuEmail('')
       setSuPassword('')
@@ -207,8 +234,9 @@ export default function LoginPage() {
 
                 <button
                   type="button"
-                  onClick={handleGoogleLogin}
-                  className="cursor-pointer flex w-full items-center justify-center gap-3 py-3 px-4 rounded-xl bg-white text-black hover:bg-gray-100 transition-all font-bold text-sm"
+                  disabled={loading}
+                  onClick={() => handleGoogleAuth('signin')}
+                  className="cursor-pointer flex w-full items-center justify-center gap-3 py-3 px-4 rounded-xl bg-white text-black hover:bg-gray-100 transition-all font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <FcGoogle className="w-5 h-5" />
                   Continue with Google
@@ -227,7 +255,7 @@ export default function LoginPage() {
                 <div className="mb-2 p-3 rounded-xl bg-[#6b21a8]/5 border border-[#6b21a8]/20 flex items-start gap-3">
                   <ShieldCheck className="w-4 h-4 text-[#6b21a8] shrink-0 mt-0.5" />
                   <p className="text-xs text-gray-400 font-mono leading-relaxed">
-                    New accounts require admin approval before access is granted.
+                    Create an account with email or Google. If Supabase email confirmation is enabled, verify your email once and then sign in.
                   </p>
                 </div>
                 <div className="relative">
@@ -279,7 +307,23 @@ export default function LoginPage() {
                   disabled={loading}
                   className="cursor-pointer w-full py-3 rounded-xl bg-[#6b21a8] hover:bg-[#7c3aed] transition-colors text-white font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed mt-1"
                 >
-                  {loading ? 'Requesting access…' : 'Request Access'}
+                  {loading ? 'Creating account…' : 'Create Account'}
+                </button>
+
+                <div className="flex items-center gap-3 my-1">
+                  <div className="flex-1 h-px bg-white/10" />
+                  <span className="text-gray-600 text-xs">or</span>
+                  <div className="flex-1 h-px bg-white/10" />
+                </div>
+
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => handleGoogleAuth('signup')}
+                  className="cursor-pointer flex w-full items-center justify-center gap-3 py-3 px-4 rounded-xl bg-white text-black hover:bg-gray-100 transition-all font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <FcGoogle className="w-5 h-5" />
+                  Sign Up with Google
                 </button>
               </motion.form>
             )}

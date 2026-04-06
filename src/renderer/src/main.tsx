@@ -1,17 +1,11 @@
 import './assets/main.css'
 
-import React, { JSX, StrictMode, useEffect } from 'react'
+import React, { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { HashRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 
 import LockScreen from './UI/LockScreen'
-import LoginPage from './auth/Login'
-import AuthInitializer from './auth/AuthToken'
 import IndexRoot from './IndexRoot'
-import { completeOAuthFromDeepLink } from './services/cloud-auth'
-import { useAuthStore } from './store/auth-store'
-
-const electronAPI = (window as any).electron?.ipcRenderer
 
 class SystemErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -39,79 +33,23 @@ class SystemErrorBoundary extends React.Component<
   }
 }
 
-let isSessionUnlocked = true
-
-const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  const accessToken = useAuthStore((s) => s.accessToken)
-  const isAuthInitialized = useAuthStore((s) => s.isAuthInitialized)
-
-  if (!isAuthInitialized) return null
-  if (!accessToken) return <Navigate to="/login" replace />
-  return children
-}
-
-const PublicRoute = ({ children }: { children: JSX.Element }) => {
-  const accessToken = useAuthStore((s) => s.accessToken)
-  const isAuthInitialized = useAuthStore((s) => s.isAuthInitialized)
-
-  if (!isAuthInitialized) return null
-  if (accessToken) return <Navigate to="/" replace />
-  return children
-}
-
 const AppRouter = () => {
   const navigate = useNavigate()
-
-  useEffect(() => {
-    if (electronAPI) {
-      electronAPI.on('oauth-callback', async (_event: any, url: string) => {
-        try {
-          const token = await completeOAuthFromDeepLink(url)
-          // Set the token immediately so ProtectedRoute sees it before navigation.
-          useAuthStore.getState().setAccessToken(token)
-          navigate('/')
-        } catch (e: any) {
-          alert(e?.message || 'Google sign-in callback failed.')
-        }
-      })
-    }
-    return () => electronAPI?.removeAllListeners('oauth-callback')
-  }, [navigate])
 
   return (
     <Routes>
       <Route
-        path="/login"
-        element={
-          <PublicRoute>
-            <LoginPage />
-          </PublicRoute>
-        }
-      />
-
-
-      <Route
         path="/lock"
         element={
-          <ProtectedRoute>
-            <LockScreen
-              onUnlock={() => {
-                isSessionUnlocked = true
-                navigate('/')
-              }}
-            />
-          </ProtectedRoute>
+          <LockScreen
+            onUnlock={() => {
+              navigate('/')
+            }}
+          />
         }
       />
 
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <IndexRoot />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/" element={<IndexRoot />} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -122,7 +60,6 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <SystemErrorBoundary>
       <HashRouter>
-        <AuthInitializer />
         <AppRouter />
       </HashRouter>
     </SystemErrorBoundary>

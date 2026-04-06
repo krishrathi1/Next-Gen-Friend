@@ -2,9 +2,8 @@ import { useEffect } from 'react'
 import { useAuthStore } from '../store/auth-store'
 import { supabase } from '@renderer/config/supabase'
 import {
-  checkUserApprovalStatus,
   enforceSingleDeviceForUser,
-  ensureCloudUserProfile,
+  ensureUserAccessStatus,
   fetchCloudUserProfile
 } from '@renderer/services/cloud-auth'
 
@@ -24,18 +23,12 @@ export default function AuthInitializer() {
         setAccessToken(accessToken)
 
         if (session?.user?.id) {
-          // Block unapproved users even if they somehow have an active session.
-          const status = await checkUserApprovalStatus(session.user.id)
-          if (status !== 'approved') {
+          const status = await ensureUserAccessStatus(session.user)
+          if (status === 'rejected') {
             await supabase.auth.signOut()
-            throw new Error(
-              status === 'rejected'
-                ? 'Your account has been rejected.'
-                : 'Your account is pending admin approval.'
-            )
+            throw new Error('Your account has been rejected.')
           }
           try {
-            await ensureCloudUserProfile(session.user)
             await enforceSingleDeviceForUser(session.user.id)
           } catch (err: any) {
             const msg: string = err?.message || 'Profile sync failed'
@@ -74,11 +67,21 @@ export default function AuthInitializer() {
     const {
       data: { subscription }
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      // Only enforce device check on active sessions. If the device is blocked
-      // we sign out; for any other error (network, IPC glitch) we do NOT clear
-      // the token — that would log the user out for a transient failure.
       if (session?.user?.id) {
         try {
+          const status = await ensureUserAccessStatus(session.user)
+          if (status === 'rejected') {
+            await supabase.auth.signOut()
+            setAccessToken(null)
+            setUser(null)
+            if (setIsAuthInitialized) setIsAuthInitialized(true)
+            return
+          }
+
+          // Only enforce device check on active approved sessions. If the device
+          // is blocked we sign out; for any other error (network, IPC glitch)
+          // we do NOT clear the token — that would log the user out for a
+          // transient failure.
           await enforceSingleDeviceForUser(session.user.id)
         } catch (err: any) {
           const msg: string = err?.message || ''
