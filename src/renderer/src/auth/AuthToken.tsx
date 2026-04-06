@@ -1,7 +1,11 @@
 import { useEffect } from 'react'
 import { useAuthStore } from '../store/auth-store'
 import { supabase } from '@renderer/config/supabase'
-import { fetchCloudUserProfile } from '@renderer/services/cloud-auth'
+import {
+  enforceSingleDeviceForUser,
+  ensureCloudUserProfile,
+  fetchCloudUserProfile
+} from '@renderer/services/cloud-auth'
 
 export default function AuthInitializer() {
   const setAccessToken = useAuthStore((s) => s.setAccessToken)
@@ -11,6 +15,9 @@ export default function AuthInitializer() {
   useEffect(() => {
     const init = async () => {
       try {
+        // Force fresh login every time the app starts.
+        await supabase.auth.signOut()
+
         const {
           data: { session }
         } = await supabase.auth.getSession()
@@ -19,6 +26,8 @@ export default function AuthInitializer() {
         setAccessToken(accessToken)
 
         if (session?.user?.id) {
+          await ensureCloudUserProfile(session.user)
+          await enforceSingleDeviceForUser(session.user.id)
           const profile = await fetchCloudUserProfile(session.user.id)
           if (profile) {
             setUser(profile)
@@ -47,6 +56,19 @@ export default function AuthInitializer() {
     const {
       data: { subscription }
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      try {
+        if (session?.user?.id) {
+          await ensureCloudUserProfile(session.user)
+          await enforceSingleDeviceForUser(session.user.id)
+        }
+      } catch (err: any) {
+        alert(err?.message || 'Sign-in blocked on this device.')
+        setAccessToken(null)
+        setUser(null)
+        if (setIsAuthInitialized) setIsAuthInitialized(true)
+        return
+      }
+
       setAccessToken(session?.access_token || null)
 
       if (session?.user?.id) {

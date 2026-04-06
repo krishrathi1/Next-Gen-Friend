@@ -68,7 +68,8 @@ const AppRouter = () => {
         try {
           await completeOAuthFromDeepLink(url)
           navigate('/')
-        } catch (e) {
+        } catch (e: any) {
+          alert(e?.message || 'Google sign-in callback failed.')
         }
       })
     }

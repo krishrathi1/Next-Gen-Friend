@@ -11,6 +11,8 @@ import {
 } from 'electron'
 import path, { join } from 'path'
 import fs from 'fs'
+import os from 'os'
+import crypto from 'crypto'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
@@ -65,8 +67,25 @@ if (!gotTheLock) {
 
 let mainWindow: BrowserWindow | null = null
 let isOverlayMode = false
+let pendingOAuthUrl: string | null = null
 
 const secureConfigPath = join(app.getPath('userData'), 'iris_secure_vault.json')
+
+function extractIrisUrl(argv: string[]): string | null {
+  return argv.find((arg) => typeof arg === 'string' && arg.startsWith('iris://')) || null
+}
+
+function forwardOAuthCallback(url: string) {
+  if (!url.startsWith('iris://')) return
+
+  pendingOAuthUrl = url
+
+  if (!mainWindow) return
+  if (mainWindow.webContents.isLoading()) return
+
+  mainWindow.webContents.send('oauth-callback', url)
+  pendingOAuthUrl = null
+}
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -88,6 +107,13 @@ function createWindow(): void {
 
   mainWindow.on('ready-to-show', () => {
     if (mainWindow) mainWindow.show()
+  })
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    if (pendingOAuthUrl) {
+      mainWindow?.webContents.send('oauth-callback', pendingOAuthUrl)
+      pendingOAuthUrl = null
+    }
   })
 
   ipcMain.on('window-min', () => mainWindow?.minimize())
@@ -115,11 +141,9 @@ app.on('second-instance', (event, commandLine) => {
   if (mainWindow) {
     if (mainWindow.isMinimized()) mainWindow.restore()
     mainWindow.focus()
-    const url = commandLine.find((arg) => arg.startsWith('iris://'))
-    if (url) {
-      mainWindow.webContents.send('oauth-callback', url)
-    }
   }
+  const url = extractIrisUrl(commandLine)
+  if (url) forwardOAuthCallback(url)
 })
 
 function toggleOverlayMode() {
@@ -201,6 +225,26 @@ app.whenReady().then(() => {
     return fs.existsSync(secureConfigPath)
   })
 
+  ipcMain.handle('get-device-details', () => {
+    const host = os.hostname() || 'unknown-host'
+    const user = os.userInfo().username || 'unknown-user'
+    const platform = os.platform()
+    const release = os.release()
+    const arch = os.arch()
+
+    const rawFingerprint = `${host}|${user}|${platform}|${release}|${arch}`
+    const fingerprint = crypto.createHash('sha256').update(rawFingerprint).digest('hex')
+
+    return {
+      fingerprint,
+      deviceName: `${host}-${user}`,
+      platform,
+      osVersion: release,
+      arch,
+      appVersion: app.getVersion()
+    }
+  })
+
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     const responseHeaders = { ...details.responseHeaders }
     delete responseHeaders['content-security-policy']
@@ -219,9 +263,7 @@ app.whenReady().then(() => {
 
   app.on('open-url', (event, url) => {
     event.preventDefault()
-    if (mainWindow && url.startsWith('iris://')) {
-      mainWindow.webContents.send('oauth-callback', url)
-    }
+    if (url.startsWith('iris://')) forwardOAuthCallback(url)
   })
 
   registerLockSystem()
@@ -264,6 +306,11 @@ app.whenReady().then(() => {
   })
 
   createWindow()
+
+  const startupUrl = extractIrisUrl(process.argv)
+  if (startupUrl) {
+    forwardOAuthCallback(startupUrl)
+  }
 
   globalShortcut.register('CommandOrControl+Shift+I', () => toggleOverlayMode())
   ipcMain.on('toggle-overlay', () => toggleOverlayMode())
