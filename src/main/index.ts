@@ -13,6 +13,7 @@ import path, { join } from 'path'
 import fs from 'fs'
 import os from 'os'
 import crypto from 'crypto'
+import http from 'http'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
@@ -68,6 +69,7 @@ if (!gotTheLock) {
 let mainWindow: BrowserWindow | null = null
 let isOverlayMode = false
 let pendingOAuthUrl: string | null = null
+let oauthCallbackServer: http.Server | null = null
 
 const secureConfigPath = join(app.getPath('userData'), 'iris_secure_vault.json')
 
@@ -76,7 +78,7 @@ function extractIrisUrl(argv: string[]): string | null {
 }
 
 function forwardOAuthCallback(url: string) {
-  if (!url.startsWith('iris://')) return
+  if (!url.startsWith('iris://') && !url.startsWith('http://127.0.0.1:54321/auth/callback')) return
 
   pendingOAuthUrl = url
 
@@ -174,6 +176,38 @@ function toggleOverlayMode() {
   isOverlayMode = !isOverlayMode
 }
 
+function startOAuthCallbackServer() {
+  if (oauthCallbackServer) return
+
+  oauthCallbackServer = http.createServer((req, res) => {
+    const requestUrl = req.url || '/'
+    const fullUrl = `http://127.0.0.1:54321${requestUrl}`
+
+    if (requestUrl.startsWith('/auth/callback')) {
+      forwardOAuthCallback(fullUrl)
+
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+      res.end(`<!doctype html>
+<html>
+  <head><title>IRIS Auth</title></head>
+  <body style="font-family: Arial, sans-serif; background: #050505; color: #fff; display: flex; align-items: center; justify-content: center; height: 100vh;">
+    <div style="text-align: center;">
+      <h2>Authentication Complete</h2>
+      <p>You can return to IRIS-AI.</p>
+      <script>window.close();</script>
+    </div>
+  </body>
+</html>`)
+      return
+    }
+
+    res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' })
+    res.end('Not found')
+  })
+
+  oauthCallbackServer.listen(54321, '127.0.0.1')
+}
+
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.electron')
 
@@ -266,6 +300,8 @@ app.whenReady().then(() => {
     if (url.startsWith('iris://')) forwardOAuthCallback(url)
   })
 
+  startOAuthCallbackServer()
+
   registerLockSystem()
   registerSecurityVault()
   registerPhantomKeyboard()
@@ -322,6 +358,10 @@ app.whenReady().then(() => {
 
 app.on('will-quit', () => {
   globalShortcut.unregisterAll()
+  if (oauthCallbackServer) {
+    oauthCallbackServer.close()
+    oauthCallbackServer = null
+  }
 })
 
 app.on('window-all-closed', () => {

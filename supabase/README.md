@@ -3,11 +3,13 @@
 1. Open Supabase SQL Editor and run [`schema.sql`](./schema.sql).
 2. In Supabase Dashboard, enable `Google` provider in `Authentication -> Providers`.
 3. Add this redirect URL in `Authentication -> URL Configuration`:
+`http://127.0.0.1:54321/auth/callback`
+4. Optional fallback redirect URL:
 `iris://oauth-callback`
 4. Keep these values in `IRIS-AI/.env`:
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
-- `VITE_SUPABASE_REDIRECT_URL=iris://oauth-callback`
+- `VITE_SUPABASE_REDIRECT_URL=http://127.0.0.1:54321/auth/callback`
 
 Notes:
 - This setup is only for `IRIS-AI`.

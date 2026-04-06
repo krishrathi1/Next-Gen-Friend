@@ -2,7 +2,7 @@ import { supabase } from '@renderer/config/supabase'
 import type { User } from '@supabase/supabase-js'
 import type { CloudUserProfile } from '@renderer/store/auth-store'
 
-const DEFAULT_REDIRECT = 'iris://oauth-callback'
+const DEFAULT_REDIRECT = 'http://127.0.0.1:54321/auth/callback'
 
 type DeviceDetails = {
   fingerprint: string
