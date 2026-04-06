@@ -83,7 +83,11 @@ function forwardOAuthCallback(url: string) {
   pendingOAuthUrl = url
 
   if (!mainWindow) return
-  if (mainWindow.webContents.isLoading()) return
+
+  if (mainWindow.webContents.isLoading()) {
+    // Page is still loading; did-finish-load will pick up pendingOAuthUrl.
+    return
+  }
 
   mainWindow.webContents.send('oauth-callback', url)
   pendingOAuthUrl = null

@@ -14,6 +14,10 @@ CREATE TABLE IF NOT EXISTS public.users (
     name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
     tier user_tier DEFAULT 'FREE',
+    -- 'pending'  → awaiting admin approval
+    -- 'approved' → allowed into the app
+    -- 'rejected' → blocked
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
     verified BOOLEAN DEFAULT FALSE,
     hwids TEXT[] DEFAULT '{}',
     token_version INTEGER DEFAULT 1,
@@ -98,16 +102,26 @@ CREATE POLICY "Users can insert their own signin logs."
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
-    INSERT INTO public.users (id, name, email, google_id)
+    INSERT INTO public.users (id, name, email, google_id, status)
     VALUES (
         new.id,
         COALESCE(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', 'IRIS User'),
         new.email,
-        new.raw_user_meta_data->>'sub'
-    );
+        new.raw_user_meta_data->>'sub',
+        'pending'
+    )
+    ON CONFLICT (id) DO NOTHING;
     RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Migration: add status column if it doesn't exist yet (safe to run on existing DB)
+DO $$ BEGIN
+    ALTER TABLE public.users ADD COLUMN status TEXT NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending', 'approved', 'rejected'));
+EXCEPTION
+    WHEN duplicate_column THEN null;
+END $$;
 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created

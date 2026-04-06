@@ -6,6 +6,7 @@ export interface CloudUserProfile {
   name: string
   email: string
   tier: 'FREE' | 'PRO'
+  status: 'pending' | 'approved' | 'rejected'
   verified: boolean
 }
 

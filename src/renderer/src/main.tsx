@@ -9,7 +9,6 @@ import LoginPage from './auth/Login'
 import AuthInitializer from './auth/AuthToken'
 import IndexRoot from './IndexRoot'
 import { completeOAuthFromDeepLink } from './services/cloud-auth'
-import { supabase } from './config/supabase'
 import { useAuthStore } from './store/auth-store'
 
 const electronAPI = (window as any).electron?.ipcRenderer
@@ -67,13 +66,9 @@ const AppRouter = () => {
     if (electronAPI) {
       electronAPI.on('oauth-callback', async (_event: any, url: string) => {
         try {
-          await completeOAuthFromDeepLink(url)
-          // Directly read the session and update the store so ProtectedRoute
-          // sees the token before navigation instead of waiting for onAuthStateChange.
-          const { data: { session } } = await supabase.auth.getSession()
-          if (session?.access_token) {
-            useAuthStore.getState().setAccessToken(session.access_token)
-          }
+          const token = await completeOAuthFromDeepLink(url)
+          // Set the token immediately so ProtectedRoute sees it before navigation.
+          useAuthStore.getState().setAccessToken(token)
           navigate('/')
         } catch (e: any) {
           alert(e?.message || 'Google sign-in callback failed.')
