@@ -1,4 +1,4 @@
-﻿import { memo, useEffect, useRef, useState, Suspense, lazy } from 'react'
+import { memo, useEffect, useRef, useState, Suspense, lazy } from 'react'
 import {
   RiAppsLine,
   RiBatteryChargeLine,
@@ -181,7 +181,7 @@ const ELI = (props: EliProps) => {
 
   return (
     <div
-      className={`h-screen w-full bg-[#040407] text-zinc-100 font-sans overflow-hidden select-none flex flex-col relative pb-5 ${props.isReentering ? 'reentry-content-fx' : ''}`}
+      className={`h-screen w-full bg-[#040407] text-zinc-100 font-sans overflow-hidden select-none flex flex-col relative ${props.isReentering ? 'reentry-content-fx' : ''}`}
     >
       <div className="h-[52px] w-full flex items-center justify-between px-4 bg-[#07070d]/90 border-b border-white/[0.05] z-50 backdrop-blur-xl shrink-0 relative overflow-hidden">
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-violet-500/40 to-transparent" />

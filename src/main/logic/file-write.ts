@@ -5,13 +5,15 @@ import path from 'path'
 export default function registerFileWrite(ipcMain: IpcMain) {
   ipcMain.handle('write-file', async (_event, { fileName, content }) => {
     try {
-      const isAbsolutePath = fileName.includes('/') || fileName.includes('\\')
+      const resolvedPath = path.isAbsolute(fileName) 
+        ? fileName 
+        : path.join(require('os').homedir(), fileName)
 
-      const targetPath = isAbsolutePath ? fileName : path.join(app.getPath('desktop'), fileName)
+      const parentDir = path.dirname(resolvedPath)
+      await fs.mkdir(parentDir, { recursive: true })
 
-
-      await fs.writeFile(targetPath, content, 'utf-8')
-      return `Success. File saved to: ${targetPath}`
+      await fs.writeFile(resolvedPath, content, 'utf-8')
+      return `Success. File saved to: ${resolvedPath}`
     } catch (err) {
       return `Error writing file: ${err}`
     }

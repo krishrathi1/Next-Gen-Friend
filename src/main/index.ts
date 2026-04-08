@@ -163,10 +163,10 @@ function toggleOverlayMode() {
   if (isOverlayMode) {
     mainWindow.setResizable(true)
     mainWindow.setAlwaysOnTop(false)
-    mainWindow.setBounds({ width: 950, height: 670 })
-    mainWindow.center()
+    mainWindow.setFullScreen(true)
     mainWindow.webContents.send('overlay-mode', false)
   } else {
+    mainWindow.setFullScreen(false)
     const w = 360
     const h = 74
     mainWindow.setBounds({

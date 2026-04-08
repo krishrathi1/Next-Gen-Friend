@@ -333,13 +333,13 @@ ${JSON.stringify(history)}
                 },
                 {
                   name: 'write_file',
-                  description: 'Write text to a file (creates or overwrites).',
+                  description: 'Write text to a file. This will automatically create any missing parent folders in the path if they don\'t exist.',
                   parameters: {
                     type: 'OBJECT',
                     properties: {
                       file_name: {
                         type: 'STRING',
-                        description: 'File name (e.g. notes.txt) or full path.'
+                        description: 'File name (e.g. notes.txt) or path (e.g. projects/web/index.html).'
                       },
                       content: { type: 'STRING', description: 'The text content to write.' }
                     },
@@ -638,7 +638,7 @@ ${JSON.stringify(history)}
                 },
                 {
                   name: 'create_folder',
-                  description: 'Create a new folder.',
+                  description: 'Create a new folder. This supports nested paths (e.g. "Projects/NewApp/src").',
                   parameters: {
                     type: 'OBJECT',
                     properties: { folder_path: { type: 'STRING' } },
