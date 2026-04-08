@@ -1261,7 +1261,7 @@ ${JSON.stringify(history)}
           turns: [
             {
               role: 'user',
-              parts: [{ text: `Hi, I'm Eli. How can I help you today?` }]
+              parts: [{ text: `[SYSTEM BOOT] You just came online. Greet your boss casually and warmly — something like "Hey Boss, what's up? How can I help you today?" Keep it short, natural, and confident. Don't sound robotic. Match your personality vibe. The user's name is ${cloudUser.name}.` }]
             }
           ],
           turnComplete: true
