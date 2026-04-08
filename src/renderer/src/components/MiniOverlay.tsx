@@ -74,17 +74,12 @@ const MiniOverlay = ({
      * the shadow had nowhere to render and showed as black blobs at the edges.
      * Background bumped to bg-zinc-950 (fully opaque) to compensate.
      */
-    <div className="mini-overlay-shell drag-region relative w-full h-full box-border flex items-center justify-between gap-4 px-3 bg-zinc-950 rounded-[999px] border border-purple-700/40 overflow-hidden shadow-2xl">
-
-      {/* Left ambient glow */}
-      <div className="pointer-events-none absolute inset-y-1 left-1 w-20 rounded-l-full bg-[radial-gradient(circle_at_left,rgba(168,85,247,0.22),transparent_70%)]" />
-      {/* Right ambient glow */}
-      <div className="pointer-events-none absolute inset-y-1 right-1 w-20 rounded-r-full bg-[radial-gradient(circle_at_right,rgba(45,212,191,0.15),transparent_70%)]" />
+    <div className="mini-overlay-shell drag-region relative w-full h-full box-border flex items-center justify-between gap-4 px-3 bg-zinc-950 rounded-[999px] border border-white/[0.07] overflow-hidden">
 
       {/* ── Left — Status dot + audio bars ── */}
       <div className="flex items-center gap-3 no-drag relative z-10">
         <div
-          className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all duration-300 ${
+          className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all duration-100 ${
             isSystemActive
               ? isTalking
                 ? 'border-purple-500 bg-purple-500/15 shadow-[0_0_14px_rgba(139,92,246,0.5)]'
@@ -93,7 +88,7 @@ const MiniOverlay = ({
           }`}
         >
           <div
-            className={`w-2.5 h-2.5 rounded-full transition-colors duration-300 ${
+            className={`w-2.5 h-2.5 rounded-full transition-colors duration-100 ${
               isSystemActive ? (isTalking ? 'bg-purple-300' : 'bg-purple-500') : 'bg-red-900'
             }`}
           />
@@ -122,7 +117,7 @@ const MiniOverlay = ({
         <button
           onClick={toggleMic}
           disabled={!isSystemActive}
-          className={`p-2.5 rounded-full transition-all duration-200 ml-1 hover:scale-105 active:scale-95 ${
+          className={`p-2.5 rounded-full transition-all duration-100 ml-1 hover:scale-105 active:scale-95 ${
             !isSystemActive
               ? 'opacity-30'
               : isMicMuted
@@ -136,13 +131,13 @@ const MiniOverlay = ({
         {/* Power */}
         <button
           onClick={toggleSystem}
-          className={`p-3 rounded-full border transition-all duration-500 mx-1 hover:scale-105 active:scale-95 ${
+          className={`p-3 rounded-full border transition-all duration-150 mx-1 hover:scale-105 active:scale-95 ${
             isSystemActive
               ? 'bg-purple-700/25 border-purple-500 text-purple-300'
               : 'bg-zinc-800 border-zinc-600 text-zinc-500 hover:text-red-400'
           }`}
         >
-          <GiPowerButton size={20} className={isSystemActive ? 'animate-pulse' : ''} />
+          <GiPowerButton size={20} />
         </button>
 
         {/* Camera */}
@@ -150,7 +145,7 @@ const MiniOverlay = ({
           onClick={() => handleVisionClick('camera')}
           disabled={!isSystemActive}
           title="Toggle Camera"
-          className={`p-2.5 rounded-full transition-all duration-200 hover:scale-105 active:scale-95 ${
+          className={`p-2.5 rounded-full transition-all duration-100 hover:scale-105 active:scale-95 ${
             !isSystemActive
               ? 'opacity-30'
               : isVideoOn && visionMode === 'camera'
@@ -166,7 +161,7 @@ const MiniOverlay = ({
           onClick={() => handleVisionClick('screen')}
           disabled={!isSystemActive}
           title="Toggle Screen"
-          className={`p-2.5 rounded-full transition-all duration-200 hover:scale-105 active:scale-95 ${
+          className={`p-2.5 rounded-full transition-all duration-100 hover:scale-105 active:scale-95 ${
             !isSystemActive
               ? 'opacity-30'
               : isVideoOn && visionMode === 'screen'

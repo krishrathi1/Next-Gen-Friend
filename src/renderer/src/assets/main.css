@@ -239,7 +239,7 @@ a {
 }
 
 .mini-overlay-shell {
-  animation: overlay-enter 0.25s ease-out forwards;
+  animation: overlay-enter 0.12s ease-out forwards;
 }
 
 .mini-overlay-sweep::before {
