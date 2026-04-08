@@ -644,7 +644,7 @@ function DashboardView({
                 <Sparkline data={ramHistory} colorClass="text-violet-400" label="RAM" />
               </div>
             ) : (
-              <div ref={mobileScrollRef} className="max-h-40 overflow-y-auto space-y-2.5 pr-1">
+              <div ref={mobileScrollRef} className="max-h-40 overflow-y-auto space-y-2.5 pr-1 scrollbar-none">
                 {transcriptContent}
               </div>
             )}
@@ -665,7 +665,7 @@ function DashboardView({
             </span>
           </div>
 
-          <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-2.5 pr-1 scrollbar-small min-h-0">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-2.5 pr-1 scrollbar-none min-h-0">
             {transcriptContent}
           </div>
         </div>
