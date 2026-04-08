@@ -1,11 +1,7 @@
 import { useEffect } from 'react'
 import { useAuthStore } from '../store/auth-store'
 import { supabase } from '@renderer/config/supabase'
-import {
-  enforceSingleDeviceForUser,
-  ensureUserAccessStatus,
-  fetchCloudUserProfile
-} from '@renderer/services/cloud-auth'
+import { ensureCloudUserProfile, fetchCloudUserProfile } from '@renderer/services/cloud-auth'
 
 export default function AuthInitializer() {
   const setAccessToken = useAuthStore((s) => s.setAccessToken)
@@ -23,21 +19,11 @@ export default function AuthInitializer() {
         setAccessToken(accessToken)
 
         if (session?.user?.id) {
-          const status = await ensureUserAccessStatus(session.user)
-          if (status === 'rejected') {
-            await supabase.auth.signOut()
-            throw new Error('Your account has been rejected.')
-          }
           try {
-            await enforceSingleDeviceForUser(session.user.id)
-          } catch (err: any) {
-            const msg: string = err?.message || 'Profile sync failed'
-            const isSchema =
-              msg.includes('supabase table missing') ||
-              msg.includes('rls policy missing') ||
-              (msg.includes('relation') && msg.includes('does not exist'))
-            if (!isSchema) throw err
+            await ensureCloudUserProfile(session.user)
+          } catch {
           }
+
           const profile = await fetchCloudUserProfile(session.user.id)
           if (profile) {
             setUser(profile)
@@ -69,30 +55,8 @@ export default function AuthInitializer() {
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user?.id) {
         try {
-          const status = await ensureUserAccessStatus(session.user)
-          if (status === 'rejected') {
-            await supabase.auth.signOut()
-            setAccessToken(null)
-            setUser(null)
-            if (setIsAuthInitialized) setIsAuthInitialized(true)
-            return
-          }
-
-          // Only enforce device check on active approved sessions. If the device
-          // is blocked we sign out; for any other error (network, IPC glitch)
-          // we do NOT clear the token — that would log the user out for a
-          // transient failure.
-          await enforceSingleDeviceForUser(session.user.id)
-        } catch (err: any) {
-          const msg: string = err?.message || ''
-          if (msg.includes('already linked to another')) {
-            alert(msg)
-            setAccessToken(null)
-            setUser(null)
-            if (setIsAuthInitialized) setIsAuthInitialized(true)
-            return
-          }
-          // Non-blocking error (schema missing, network, etc.) — allow sign-in.
+          await ensureCloudUserProfile(session.user)
+        } catch {
         }
       }
 

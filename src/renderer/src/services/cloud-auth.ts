@@ -83,6 +83,15 @@ async function appendSignInLog(
   })
 }
 
+function isSchemaConfigError(message: string): boolean {
+  const m = message.toLowerCase()
+  return (
+    m.includes('supabase table missing') ||
+    m.includes('rls policy missing') ||
+    (m.includes('relation') && m.includes('does not exist'))
+  )
+}
+
 function getUserProfilePayload(user: User, overrides?: Partial<Record<'status' | 'name' | 'email', string>>) {
   return {
     id: user.id,
@@ -118,51 +127,15 @@ export async function ensureCloudUserProfile(user: User): Promise<void> {
   }
 }
 
-export async function ensureUserAccessStatus(user: User): Promise<'approved' | 'rejected'> {
-  const { data, error } = await supabase
-    .from('users')
-    .select('status')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  if (error) {
-    if ((error as any).code === '42P01') {
-      throw new Error(
-        'Supabase table missing. Run IRIS-AI/supabase/schema.sql in SQL Editor first.'
-      )
+async function syncUserProfileSafely(user: User): Promise<void> {
+  try {
+    await ensureCloudUserProfile(user)
+  } catch (err: any) {
+    const msg = err?.message || 'Profile sync failed.'
+    if (!isSchemaConfigError(msg)) {
+      throw err
     }
-    if ((error as any).code === '42501') {
-      throw new Error(
-        'RLS policy missing for users access. Re-run IRIS-AI/supabase/schema.sql in SQL Editor.'
-      )
-    }
-    throw new Error(`Could not read user status: ${error.message}`)
   }
-
-  if (!data || !data.status || data.status === 'pending') {
-    const { error: upsertError } = await supabase
-      .from('users')
-      .upsert({ ...getUserProfilePayload(user), status: 'approved' }, { onConflict: 'id' })
-
-    if (upsertError) {
-      if ((upsertError as any).code === '42P01') {
-        throw new Error(
-          'Supabase table missing. Run IRIS-AI/supabase/schema.sql in SQL Editor first.'
-        )
-      }
-      if ((upsertError as any).code === '42501') {
-        throw new Error(
-          'RLS policy missing for users upsert. Re-run IRIS-AI/supabase/schema.sql in SQL Editor.'
-        )
-      }
-      throw new Error(upsertError.message)
-    }
-
-    return 'approved'
-  }
-
-  await ensureCloudUserProfile(user)
-  return data.status === 'rejected' ? 'rejected' : 'approved'
 }
 
 export async function enforceSingleDeviceForUser(userId: string): Promise<void> {
@@ -226,14 +199,7 @@ async function finalizeOAuthSession(
     throw new Error('OAuth callback did not return a valid session.')
   }
 
-  const status = await ensureUserAccessStatus(user)
-
-  if (status === 'rejected') {
-    await supabase.auth.signOut()
-    throw new Error('Your account has been rejected. Contact support.')
-  }
-
-  await enforceSingleDeviceForUser(user.id)
+  await syncUserProfileSafely(user)
 
   return {
     status: 'authenticated',
@@ -367,26 +333,28 @@ export async function signUpWithEmail(
 
   // Ensure the profile row exists and is usable immediately.
   if (data.user?.id) {
-    await supabase.from('users').upsert(
-      {
-        id: data.user.id,
-        email: data.user.email || email,
-        name,
-        status: 'approved',
-        verified: data.user.email_confirmed_at != null
-      },
-      { onConflict: 'id' }
-    )
+    try {
+      const { error: profileError } = await supabase.from('users').upsert(
+        {
+          id: data.user.id,
+          email: data.user.email || email,
+          name,
+          google_id: (data.user.user_metadata?.sub as string) || null,
+          verified: data.user.email_confirmed_at != null
+        },
+        { onConflict: 'id' }
+      )
+
+      if (profileError && !isSchemaConfigError(profileError.message)) {
+        throw profileError
+      }
+    } catch (err: any) {
+      const msg = err?.message || 'Profile sync failed.'
+      if (!isSchemaConfigError(msg)) throw err
+    }
   }
 
   if (data.session?.access_token && data.user?.id) {
-    const status = await ensureUserAccessStatus(data.user)
-    if (status === 'rejected') {
-      await supabase.auth.signOut()
-      throw new Error('Your account has been rejected. Contact support.')
-    }
-
-    await enforceSingleDeviceForUser(data.user.id)
     return {
       status: 'authenticated',
       token: data.session.access_token
@@ -404,14 +372,8 @@ export async function signInWithEmail(email: string, password: string): Promise<
   if (error) throw error
   if (!data.session?.access_token) throw new Error('Sign-in failed: no session returned.')
 
-  const status = await ensureUserAccessStatus(data.user)
-  if (status === 'rejected') {
-    await supabase.auth.signOut()
-    throw new Error('Your account has been rejected. Contact support.')
-  }
-
   if (data.user?.id) {
-    await enforceSingleDeviceForUser(data.user.id)
+    await syncUserProfileSafely(data.user)
   }
 
   return data.session.access_token
