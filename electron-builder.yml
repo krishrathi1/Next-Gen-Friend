@@ -1,4 +1,4 @@
-appId: com.harshpandey.iris
+appId: com.yashpandey.iris
 productName: IRIS AI
 directories:
   buildResources: build
@@ -58,7 +58,7 @@ linux:
     - AppImage
     - snap
     - deb
-  maintainer: Harsh Pandey
+  maintainer: Yash Pandey
   category: Utility
 appImage:
   artifactName: ${name}-${version}.${ext}
