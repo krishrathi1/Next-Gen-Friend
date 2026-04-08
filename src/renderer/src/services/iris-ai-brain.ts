@@ -1,6 +1,8 @@
 export interface ChatMessage {
   role: 'user' | 'model'
   parts: [{ text: string }]
+  content?: string
+  timestamp?: string
 }
 
 export const saveMessage = async (role: 'user' | 'model' | 'iris', text: string) => {

@@ -3,10 +3,12 @@ import { useRef, useMemo } from 'react'
 import * as THREE from 'three'
 import { irisService } from '@renderer/services/Iris-voice-ai'
 
-const CustomParticleSphere = ({ count = 5000 }) => {
+const CustomParticleSphere = ({ count = 3000 }) => {
   const mesh = useRef<THREE.Points>(null)
 
   const dataArray = useMemo(() => new Uint8Array(128), [])
+  const colorA = useMemo(() => new THREE.Color('#33db12'), [])
+  const colorB = useMemo(() => new THREE.Color('#ffffff'), [])
 
   const { positions, originalPositions, spreadFactors } = useMemo(() => {
     const pos = new Float32Array(count * 3)
@@ -47,7 +49,7 @@ const CustomParticleSphere = ({ count = 5000 }) => {
       volume = avg / 128
     }
 
-    const color = new THREE.Color('#33db12').lerp(new THREE.Color('#FFFFFF'), volume)
+    const color = colorA.clone().lerp(colorB, volume)
     ;(mesh.current.material as THREE.PointsMaterial).color = color
 
     const currentPos = mesh.current.geometry.attributes.position.array as Float32Array

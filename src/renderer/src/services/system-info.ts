@@ -5,7 +5,7 @@ export interface SystemStats {
     free: string
     usedPercentage: string
   }
-  temperature: number
+  temperature: number | null
   os: {
     type: string
     uptime: string

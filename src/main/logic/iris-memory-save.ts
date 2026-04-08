@@ -48,7 +48,7 @@ export default function registerIpcHandlers({ ipcMain, app }: { ipcMain: IpcMain
 
       const newEntry: HistoryEntry = {
         role: msg.role,
-        content: msg.parts[0].text,
+        content: msg.parts?.[0]?.text || msg.content || '',
         timestamp: new Date().toISOString()
       }
       historyCache.push(newEntry)
@@ -67,7 +67,9 @@ export default function registerIpcHandlers({ ipcMain, app }: { ipcMain: IpcMain
       await ensureLoaded()
       return (historyCache || []).map((m: any) => ({
         role: m.role === 'iris' ? 'model' : m.role,
-        parts: [{ text: m.content }]
+        content: m.content,
+        parts: [{ text: m.content }],
+        timestamp: m.timestamp
       }))
     } catch (err) {}
     return []

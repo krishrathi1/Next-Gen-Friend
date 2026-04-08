@@ -13,6 +13,33 @@ const runCommand = (cmd: string): Promise<string> => {
 }
 
 let cpuLastSnapshot = os.cpus()
+let cachedTemperatureC: number | null = null
+let cachedTemperatureAt = 0
+
+const getSystemTemperature = async (): Promise<number | null> => {
+  const now = Date.now()
+  if (now - cachedTemperatureAt < 30000) {
+    return cachedTemperatureC
+  }
+
+  cachedTemperatureAt = now
+  if (os.platform() !== 'win32') {
+    cachedTemperatureC = null
+    return cachedTemperatureC
+  }
+
+  const command =
+    'powershell "(Get-WmiObject MSAcpi_ThermalZoneTemperature -Namespace root/wmi | Select-Object -First 1 -ExpandProperty CurrentTemperature)"'
+  const output = await runCommand(command)
+  const kelvinTenth = Number(output)
+  if (!Number.isFinite(kelvinTenth) || kelvinTenth <= 0) {
+    cachedTemperatureC = null
+    return cachedTemperatureC
+  }
+
+  cachedTemperatureC = Math.round(kelvinTenth / 10 - 273.15)
+  return cachedTemperatureC
+}
 
 function getSystemCpuUsage() {
   const cpus = os.cpus()
@@ -70,6 +97,7 @@ export default function registerSystemHandlers(ipcMain: IpcMain) {
   ipcMain.handle('get-system-stats', async () => {
     const totalMem = os.totalmem()
     const freeMem = os.freemem()
+    const temperature = await getSystemTemperature()
     return {
       cpu: getSystemCpuUsage(),
       memory: {
@@ -77,7 +105,7 @@ export default function registerSystemHandlers(ipcMain: IpcMain) {
         free: (freeMem / 1024 ** 3).toFixed(1) + ' GB',
         usedPercentage: (((totalMem - freeMem) / totalMem) * 100).toFixed(1)
       },
-      temperature: 50,
+      temperature,
       os: {
         type: 'Windows 11',
         uptime: (os.uptime() / 3600).toFixed(1) + 'h'

@@ -27,6 +27,7 @@ const IndexRoot = () => {
 
   const [isVideoOn, setIsVideoOn] = useState(false)
   const [visionMode, setVisionMode] = useState<VisionMode>('none')
+  const [activeStream, setActiveStream] = useState<MediaStream | null>(null)
 
   const processingVideoRef = useRef<HTMLVideoElement>(document.createElement('video'))
   const activeStreamRef = useRef<MediaStream | null>(null)
@@ -89,6 +90,8 @@ const IndexRoot = () => {
     try {
       if (activeStreamRef.current) {
         activeStreamRef.current.getTracks().forEach((t) => t.stop())
+        activeStreamRef.current = null
+        setActiveStream(null)
       }
 
       let stream: MediaStream
@@ -115,6 +118,7 @@ const IndexRoot = () => {
       }
 
       activeStreamRef.current = stream
+      setActiveStream(stream)
 
       processingVideoRef.current.srcObject = stream
       await processingVideoRef.current.play()
@@ -137,6 +141,7 @@ const IndexRoot = () => {
     if (activeStreamRef.current) {
       activeStreamRef.current.getTracks().forEach((t) => t.stop())
       activeStreamRef.current = null
+      setActiveStream(null)
     }
 
     if (processingVideoRef.current) {
@@ -200,7 +205,7 @@ const IndexRoot = () => {
           visionMode={visionMode}
           startVision={startVision}
           stopVision={stopVision}
-          activeStream={activeStreamRef.current}
+          activeStream={activeStream}
         />
       </div>
       <SmartDropZonesWidget />

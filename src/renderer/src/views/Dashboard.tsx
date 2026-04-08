@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef, useState } from 'react'
+﻿import { memo, useEffect, useCallback, useRef, useState } from 'react'
 import Sphere from '@renderer/components/Sphere'
 import {
   RiCpuLine,
@@ -19,6 +19,7 @@ import { GiTinker } from 'react-icons/gi'
 import { HiComputerDesktop } from 'react-icons/hi2'
 import * as faceapi from 'face-api.js'
 import { VisionMode } from '@renderer/IndexRoot'
+import { SystemStats } from '@renderer/services/system-info'
 
 interface IrisProps {
   isSystemActive: boolean
@@ -34,15 +35,29 @@ interface IrisProps {
 
 interface DashboardViewProps {
   props: IrisProps
-  stats: any
+  stats: SystemStats | null
+  networkRttMs: number | null
   chatHistory: any[]
   onVisionClick: () => void
+}
+
+type TranscriptMessage = {
+  role: string
+  content?: string
+  parts?: Array<{ text?: string }>
+  timestamp?: string
+}
+
+const getMessageText = (msg: TranscriptMessage): string => {
+  if (typeof msg.content === 'string' && msg.content.trim()) return msg.content
+  if (Array.isArray(msg.parts) && msg.parts[0]?.text) return msg.parts[0].text
+  return ''
 }
 
 const glassPanel =
   'bg-[#09090e]/80 backdrop-blur-xl border border-white/[0.06] rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.4)]'
 
-export default function DashboardView({ props, stats, chatHistory, onVisionClick }: DashboardViewProps) {
+function DashboardView({ props, stats, networkRttMs, chatHistory, onVisionClick }: DashboardViewProps) {
   const {
     isSystemActive,
     isVideoOn,
@@ -62,7 +77,9 @@ export default function DashboardView({ props, stats, chatHistory, onVisionClick
   const [modelsLoaded, setModelsLoaded] = useState(false)
 
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
+    }
   }, [chatHistory])
 
   useEffect(() => {
@@ -70,7 +87,7 @@ export default function DashboardView({ props, stats, chatHistory, onVisionClick
       try {
         const MODEL_URL = '/models'
         await Promise.all([
-          faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
           faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
           faceapi.nets.ageGenderNet.loadFromUri(MODEL_URL)
         ])
@@ -96,7 +113,7 @@ export default function DashboardView({ props, stats, chatHistory, onVisionClick
           }
           const ctx = canvas.getContext('2d')
           if (!ctx) return
-          const options = new faceapi.SsdMobilenetv1Options({ minConfidence: 0.3 })
+          const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.3 })
           const detection = await faceapi
             .detectSingleFace(video, options)
             .withFaceExpressions()
@@ -128,7 +145,7 @@ export default function DashboardView({ props, stats, chatHistory, onVisionClick
             )
             const gender = detection.gender === 'male' ? 'M' : 'F'
             const age = Math.round(detection.age)
-            const labelText = ` ${gender} · ${age} · ${domExp.toUpperCase()} `
+            const labelText = ` ${gender} Â· ${age} Â· ${domExp.toUpperCase()} `
             ctx.fillStyle = 'rgba(7,7,15,0.9)'
             ctx.fillRect(mirroredX, y - 28, width, 22)
             ctx.fillStyle = '#a78bfa'
@@ -194,13 +211,13 @@ export default function DashboardView({ props, stats, chatHistory, onVisionClick
     {
       icon: <GiTinker />,
       label: 'TEMP',
-      val: isSystemActive && stats ? `${stats.temperature}°` : '--',
+      val: isSystemActive && stats && stats.temperature !== null ? `${stats.temperature}°` : '--',
       color: 'text-amber-400'
     },
     {
       icon: <HiComputerDesktop />,
       label: 'OS',
-      val: isSystemActive && stats ? `${stats.os.type}` : '--',
+      val: isSystemActive && stats ? `${stats.os.type} ${stats.os.uptime}` : '--',
       color: 'text-emerald-400'
     }
   ]
@@ -208,7 +225,7 @@ export default function DashboardView({ props, stats, chatHistory, onVisionClick
   return (
     <div className="flex-1 p-3 grid grid-cols-12 gap-3 h-full overflow-hidden relative animate-in fade-in zoom-in duration-300 w-full">
 
-      {/* ── LEFT PANEL ── */}
+      {/* â”€â”€ LEFT PANEL â”€â”€ */}
       <div className="hidden lg:flex col-span-3 flex-col gap-3 h-full z-40">
 
         {/* Vision Feed Card */}
@@ -282,7 +299,7 @@ export default function DashboardView({ props, stats, chatHistory, onVisionClick
               <p className="text-[9px] text-zinc-600 font-mono tracking-widest mb-0.5">WSS LATENCY</p>
               <span className="text-xs font-semibold text-zinc-300 flex items-center gap-1">
                 <RiWifiLine size={12} className={isSystemActive ? 'text-violet-500' : 'text-zinc-600'} />
-                {isSystemActive ? '24ms' : '--'}
+                {isSystemActive ? (networkRttMs ? `${networkRttMs}ms` : '--') : '--'}
               </span>
             </div>
             <div className="text-right">
@@ -322,7 +339,7 @@ export default function DashboardView({ props, stats, chatHistory, onVisionClick
         </div>
       </div>
 
-      {/* ── CENTER PANEL ── */}
+      {/* â”€â”€ CENTER PANEL â”€â”€ */}
       <div className="col-span-12 lg:col-span-6 relative flex flex-col items-center justify-center">
         {/* Mobile PiP video */}
         <div
@@ -398,7 +415,7 @@ export default function DashboardView({ props, stats, chatHistory, onVisionClick
         </div>
       </div>
 
-      {/* ── RIGHT PANEL — Transcript ── */}
+      {/* â”€â”€ RIGHT PANEL â€” Transcript â”€â”€ */}
       <div className="hidden lg:flex col-span-3 flex-col overflow-hidden h-full z-40">
         <div className={`${glassPanel} h-full p-4 flex flex-col`}>
           <div className="flex items-center justify-between border-b border-white/[0.05] pb-3 mb-3">
@@ -416,7 +433,7 @@ export default function DashboardView({ props, stats, chatHistory, onVisionClick
                 <span className="text-[9px] tracking-[0.2em] uppercase font-mono">No data stream</span>
               </div>
             ) : (
-              chatHistory.map((msg, idx) => (
+              chatHistory.map((msg: TranscriptMessage, idx) => (
                 <div key={idx} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                   <div
                     className={`max-w-[95%] py-2 px-3 rounded-xl text-[11px] leading-relaxed font-medium transition-all ${
@@ -425,8 +442,13 @@ export default function DashboardView({ props, stats, chatHistory, onVisionClick
                         : 'bg-white/[0.03] border border-white/[0.06] text-zinc-400 rounded-bl-sm'
                     }`}
                   >
-                    {msg.parts && msg.parts[0] ? msg.parts[0].text : msg.content}
+                    {getMessageText(msg)}
                   </div>
+                  <span className="mt-1 text-[9px] font-mono text-zinc-600">
+                    {msg.timestamp
+                      ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                      : ''}
+                  </span>
                 </div>
               ))
             )}
@@ -436,3 +458,6 @@ export default function DashboardView({ props, stats, chatHistory, onVisionClick
     </div>
   )
 }
+
+export default memo(DashboardView)
+

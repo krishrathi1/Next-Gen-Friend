@@ -1,4 +1,4 @@
-import { useState, useEffect, Suspense, lazy, useRef } from 'react'
+import { memo, useState, useEffect, Suspense, lazy, useRef } from 'react'
 import {
   RiWifiLine,
   RiShieldFlashLine,
@@ -14,7 +14,7 @@ import {
   RiImageLine,
   RiAppsLine
 } from 'react-icons/ri'
-import { getSystemStatus } from '@renderer/services/system-info'
+import { getSystemStatus, SystemStats } from '@renderer/services/system-info'
 import { getHistory } from '@renderer/services/iris-ai-brain'
 import ViewSkeleton from '@renderer/components/ViewSkelrton'
 
@@ -52,18 +52,31 @@ const TABS = [
 
 const glassPanel = 'bg-zinc-950/50 backdrop-blur-xl border border-white/[0.06] rounded-2xl shadow-xl'
 
+const ClockDisplay = memo(() => {
+  const [time, setTime] = useState<Date>(new Date())
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  return (
+    <span className="text-[10px] font-mono text-zinc-400 tabular-nums">
+      {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+    </span>
+  )
+})
+
 const ELI = (props: EliProps) => {
   const [activeTab, setActiveTab] = useState('DASHBOARD')
-  const [stats, setStats] = useState<any>(null)
-  const [time, setTime] = useState<Date>(new Date())
+  const [stats, setStats] = useState<SystemStats | null>(null)
+  const [batteryLevel, setBatteryLevel] = useState<number>(100)
+  const [networkRttMs, setNetworkRttMs] = useState<number | null>(null)
   const [chatHistory, setChatHistory] = useState<any[]>([])
   const [showSourceModal, setShowSourceModal] = useState(false)
   const lastHistorySigRef = useRef('')
 
   useEffect(() => {
-    const clockTimer = setInterval(() => {
-      setTime(new Date())
-    }, 1000)
     const statsTimer = setInterval(() => {
       getSystemStatus().then(setStats)
     }, 2000)
@@ -71,9 +84,39 @@ const ELI = (props: EliProps) => {
     getSystemStatus().then(setStats)
 
     return () => {
-      clearInterval(clockTimer)
       clearInterval(statsTimer)
     }
+  }, [])
+
+  useEffect(() => {
+    let cleanup: (() => void) | undefined
+    ;(navigator as any)
+      .getBattery?.()
+      .then((battery: any) => {
+        const syncBattery = () => setBatteryLevel(Math.round((battery.level || 0) * 100))
+        syncBattery()
+        battery.addEventListener?.('levelchange', syncBattery)
+        cleanup = () => battery.removeEventListener?.('levelchange', syncBattery)
+      })
+      .catch(() => {})
+
+    return () => {
+      if (cleanup) cleanup()
+    }
+  }, [])
+
+  useEffect(() => {
+    const conn = (navigator as any).connection
+    if (!conn) return
+
+    const syncRtt = () => {
+      const rtt = Number(conn.rtt)
+      setNetworkRttMs(Number.isFinite(rtt) && rtt > 0 ? rtt : null)
+    }
+
+    syncRtt()
+    conn.addEventListener?.('change', syncRtt)
+    return () => conn.removeEventListener?.('change', syncRtt)
   }, [])
 
   useEffect(() => {
@@ -81,7 +124,10 @@ const ELI = (props: EliProps) => {
       const history = await getHistory()
       if (!Array.isArray(history)) return
       const trimmed = history.slice(-15)
-      const signature = JSON.stringify(trimmed)
+      const last = trimmed[trimmed.length - 1]
+      const lastText = last?.content || last?.parts?.[0]?.text || ''
+      const lastStamp = last?.timestamp || ''
+      const signature = `${trimmed.length}|${last?.role || ''}|${lastStamp}|${lastText}`
       if (signature !== lastHistorySigRef.current) {
         lastHistorySigRef.current = signature
         setChatHistory(trimmed)
@@ -154,12 +200,10 @@ const ELI = (props: EliProps) => {
           </div>
           <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-mono text-zinc-600">
             <RiBatteryChargeLine size={12} />
-            <span>100%</span>
+            <span>{batteryLevel}%</span>
           </div>
           <div className="bg-white/[0.04] border border-white/[0.06] px-2.5 py-1 rounded-md">
-            <span className="text-[10px] font-mono text-zinc-400 tabular-nums">
-              {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-            </span>
+            <ClockDisplay />
           </div>
         </div>
       </div>
@@ -170,6 +214,7 @@ const ELI = (props: EliProps) => {
           <DashboardView
             props={props}
             stats={stats}
+            networkRttMs={networkRttMs}
             chatHistory={chatHistory}
             onVisionClick={handleVisionClick}
           />
