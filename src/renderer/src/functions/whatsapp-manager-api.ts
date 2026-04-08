@@ -162,6 +162,7 @@ const sendMessagePayload = async (message: string, windowTitle: string, filePath
     await runGhostSequenceOrThrow(
       [
         { type: 'focus-window', title: windowTitle },
+        { type: 'click-at-relative', x: 50, y: 87 },
         { type: 'press', key: 'v', modifiers: ['control'] },
         { type: 'wait', ms: 2800 },
         { type: 'type', text: message },
@@ -175,8 +176,9 @@ const sendMessagePayload = async (message: string, windowTitle: string, filePath
   await runGhostSequenceOrThrow(
     [
       { type: 'focus-window', title: windowTitle },
+      { type: 'click-at-relative', x: 50, y: 87 },
       { type: 'paste', text: message },
-      { type: 'wait', ms: 350 },
+      { type: 'wait', ms: 400 },
       { type: 'press', key: 'enter' }
     ],
     'send-text'

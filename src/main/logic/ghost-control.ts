@@ -151,6 +151,17 @@ export default function registerGhostControl(
             )
           })
           await new Promise((r) => setTimeout(r, 700))
+        } else if (action.type === 'click-at-relative') {
+          const primaryDisplay = screen.getPrimaryDisplay()
+          const { width, height } = primaryDisplay.size
+          const scaleFactor = primaryDisplay.scaleFactor
+          const x = Math.round(((action.x ?? 50) / 100) * width * scaleFactor)
+          const y = Math.round(((action.y ?? 50) / 100) * height * scaleFactor)
+          const logicalX = Math.round(x / scaleFactor)
+          const logicalY = Math.round(y / scaleFactor)
+          await mouse.move([new Point(logicalX, logicalY)])
+          await mouse.leftClick()
+          await new Promise((r) => setTimeout(r, 200))
         }
       }
       return true

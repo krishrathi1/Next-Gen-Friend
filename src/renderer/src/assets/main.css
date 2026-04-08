@@ -43,6 +43,12 @@ body,
   background: var(--surface-0);
 }
 
+html.overlay-mode,
+html.overlay-mode body,
+html.overlay-mode #root {
+  background: transparent !important;
+}
+
 body {
   font-family:
     'Inter',
