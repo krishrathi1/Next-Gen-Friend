@@ -11,7 +11,8 @@ import {
   RiCameraLine,
   RiComputerLine,
   RiCloseLine,
-  RiImageLine
+  RiImageLine,
+  RiAppsLine
 } from 'react-icons/ri'
 import { getSystemStatus } from '@renderer/services/system-info'
 import { getHistory } from '@renderer/services/iris-ai-brain'
@@ -25,6 +26,7 @@ const WorkFlowEditorView = lazy(() => import('../views/WorkFlowEditor'))
 const NotesView = lazy(() => import('../views/Notes'))
 const SettingsView = lazy(() => import('../views/Settings'))
 const GalleryView = lazy(() => import('../views/Gallery'))
+const AppsView = lazy(() => import('../views/APP'))
 
 interface EliProps {
   isSystemActive: boolean
@@ -42,6 +44,7 @@ const TABS = [
   { id: 'DASHBOARD', label: 'Dashboard', icon: <RiLayoutGridLine size={14} /> },
   { id: 'Macros', label: 'Macros', icon: <RiBrainLine size={14} /> },
   { id: 'NOTES', label: 'Notes', icon: <RiFolderOpenLine size={14} /> },
+  { id: 'APPS', label: 'Apps', icon: <RiAppsLine size={14} /> },
   { id: 'GALLERY', label: 'Gallery', icon: <RiImageLine size={14} /> },
   { id: 'PHONE', label: 'Phone', icon: <RiPhoneLine size={14} /> },
   { id: 'SETTINGS', label: 'Settings', icon: <RiSettings4Line size={14} /> }
@@ -179,6 +182,7 @@ const ELI = (props: EliProps) => {
         <Suspense fallback={<ViewSkeleton />}>
           {activeTab === 'Macros' && <WorkFlowEditorView />}
           {activeTab === 'NOTES' && <NotesView glassPanel={glassPanel} />}
+          {activeTab === 'APPS' && <AppsView />}
           {activeTab === 'SETTINGS' && <SettingsView isSystemActive={props.isSystemActive} />}
           {activeTab === 'GALLERY' && <GalleryView />}
         </Suspense>

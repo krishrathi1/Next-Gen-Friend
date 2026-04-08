@@ -156,4 +156,19 @@ export default function registerDirLoader(ipcMain: IpcMain) {
       return `System Error: ${err}`
     }
   })
+
+  ipcMain.handle('create-directory', async (_event, targetPath: string) => {
+    try {
+      const rawInput = String(targetPath || '').trim()
+      if (!rawInput) {
+        return { success: false, error: 'Path is required.' }
+      }
+
+      const resolvedPath = path.isAbsolute(rawInput) ? rawInput : path.join(os.homedir(), rawInput)
+      await fs.mkdir(resolvedPath, { recursive: true })
+      return { success: true, path: resolvedPath }
+    } catch (err) {
+      return { success: false, error: String(err) }
+    }
+  })
 }
