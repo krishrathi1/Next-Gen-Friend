@@ -12,7 +12,11 @@ import {
   RiServerLine,
   RiSwapBoxLine,
   RiTerminalBoxLine,
-  RiWifiLine
+  RiWifiLine,
+  RiHardDrive2Line,
+  RiCloudLine,
+  RiArrowDownCircleLine,
+  RiArrowUpCircleLine
 } from 'react-icons/ri'
 import { FaMemory } from 'react-icons/fa6'
 import { GiTinker } from 'react-icons/gi'
@@ -63,7 +67,7 @@ type MetricCard = {
 }
 
 const glassPanel =
-  'bg-[#0a0a10]/40 backdrop-blur-3xl border border-white/[0.08] rounded-[2rem] shadow-[0_12px_40px_rgba(0,0,0,0.5),inset_0_0_0_1px_rgba(255,255,255,0.03)] transition-all duration-500 hover:border-violet-500/30'
+  'bg-white/[0.02] backdrop-blur-3xl border border-white/[0.08] rounded-2xl shadow-xl transition-all duration-500'
 
 const getMessageText = (msg: TranscriptMessage): string => {
   if (typeof msg.content === 'string' && msg.content.trim()) return msg.content
@@ -380,16 +384,15 @@ function DashboardView({
   )
 
   return (
-    <div className="flex-1 p-3 grid grid-cols-12 gap-3 h-full overflow-hidden relative animate-in fade-in zoom-in duration-300 w-full">
-      <div className="hidden lg:flex col-span-3 flex-col gap-3 h-full z-40 overflow-y-auto scrollbar-none pb-4">
+    <div className="flex-1 p-3 grid grid-cols-12 gap-3 h-full overflow-hidden overflow-x-hidden relative animate-in fade-in zoom-in duration-300 w-full">
+      <div className="hidden lg:flex col-span-3 flex-col gap-3 h-full z-40 overflow-y-auto overflow-x-hidden scrollbar-none pb-20 pr-1.5">
         <div className={`${glassPanel} h-[260px] shrink-0 flex flex-col overflow-hidden relative group border-violet-500/10 hover:border-violet-500/40 p-1 bg-black/40`}>
-          <div className="absolute top-4 left-4 z-40 flex items-center gap-3 bg-black/60 backdrop-blur-xl rounded-full px-3.5 py-1.5 border border-white/10 shadow-2xl">
+          <div className="absolute top-4 left-4 z-40 flex items-center gap-2.5 bg-black/60 backdrop-blur-xl rounded-full px-3 py-1.5 border border-white/10">
             <div className="relative flex items-center justify-center">
-               <span className={`w-2.5 h-2.5 rounded-full ${isVideoOn ? 'bg-red-500 shadow-[0_0_12px_rgba(239,68,68,1)] animate-pulse' : 'bg-zinc-600'}`} />
-               {isVideoOn && <span className="absolute inset-0 rounded-full animate-ping bg-red-500/40" />}
+               <span className={`w-2 h-2 rounded-full ${isVideoOn ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,1)] animate-pulse' : 'bg-zinc-600'}`} />
             </div>
-            <span className={`text-[11px] font-black tracking-[0.3em] uppercase ${isVideoOn ? 'text-red-400' : 'text-zinc-600'}`}>
-              {isVideoOn ? (visionMode === 'screen' ? 'DEEP SCAN: SCREEN' : 'DEEP SCAN: OPTICAL') : 'SENSOR OFFLINE'}
+            <span className={`text-[10px] font-black tracking-widest uppercase ${isVideoOn ? 'text-red-400' : 'text-zinc-600'}`}>
+              {isVideoOn ? (visionMode === 'screen' ? 'SCREEN' : 'OPTICAL') : 'OFFLINE'}
             </span>
           </div>
 
@@ -479,6 +482,64 @@ function DashboardView({
           </div>
         </div>
 
+        <div className="p-4 bg-cyan-900/10 backdrop-blur-3xl rounded-2xl border border-cyan-500/20 shadow-[0_0_30px_rgba(6,182,212,0.1)] relative overflow-hidden group/disk shrink-0">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 blur-[60px] rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none" />
+          <div className="mb-4 flex items-center justify-between border-b border-white/10 pb-3">
+            <span className="flex items-center gap-2.5 text-[11px] font-black tracking-[0.3em] text-cyan-400 uppercase">
+              <RiHardDrive2Line size={16} className="text-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.5)]" />
+              STORAGE CLUSTER
+            </span>
+            <div className="flex gap-1.5">
+               <div className="w-1.5 h-3 bg-cyan-500/60 rounded-full animate-pulse shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
+               <div className="w-1.5 h-2 bg-cyan-500/30 rounded-full" />
+            </div>
+          </div>
+          <div className="space-y-5">
+            {drives.length === 0 ? (
+              <div className="py-6 flex flex-col items-center justify-center opacity-40">
+                 <RiCpuLine size={24} className="text-zinc-500 animate-pulse mb-2" />
+                 <p className="text-[9px] font-black text-zinc-500 tracking-[0.3em] uppercase">LINKING DRIVE TELEMETRY</p>
+              </div>
+            ) : (
+              drives.slice(0, 3).map((drive) => {
+                const used = Math.max(0, drive.TotalGB - drive.FreeGB)
+                const usedPct = drive.TotalGB > 0 ? Math.round((used / drive.TotalGB) * 100) : 0
+                return (
+                  <div key={String(drive.Name)} className="group/drive relative">
+                    <div className="mb-2.5 flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                         <div className="flex items-center justify-center w-5 h-5 rounded-lg bg-cyan-500/20 border border-cyan-500/30 text-cyan-400">
+                            <RiCpuLine size={12} />
+                         </div>
+                         <div className="flex flex-col">
+                            <span className="text-[10px] font-black text-white tracking-wider">DRIVE {drive.Name}</span>
+                            <span className="text-[7px] font-bold text-zinc-500 tracking-widest uppercase">SYSLOG: SECTOR_{drive.Name}</span>
+                         </div>
+                      </div>
+                      <div className="text-right">
+                         <span className="text-[12px] font-black text-cyan-400 tabular-nums leading-none tracking-tighter shadow-cyan-900">{usedPct}%</span>
+                         <p className="text-[6px] font-black text-zinc-600 uppercase tracking-tighter">UTILIZATION</p>
+                      </div>
+                    </div>
+                    <div className="relative h-2.5 w-full rounded-full bg-black/80 p-[1.5px] border border-white/[0.05]">
+                      <div 
+                        className="h-full rounded-full bg-gradient-to-r from-cyan-700 via-cyan-400 to-white shadow-[0_0_12px_rgba(6,182,212,0.6)] transition-all duration-1000 ease-out relative" 
+                        style={{ width: `${usedPct}%` }} 
+                      >
+                         <div className="absolute inset-0 bg-white/30 animate-pulse rounded-full" />
+                      </div>
+                    </div>
+                    <div className="mt-2 flex justify-between text-[8px] font-black text-zinc-400 tracking-wider uppercase">
+                       <span className="flex items-center gap-1 opacity-70"><RiCpuLine size={10} className="text-cyan-500" /> {Math.round(drive.TotalGB)}G CAP</span>
+                       <span className="flex items-center gap-1 opacity-70"><RiCpuLine size={10} className="text-cyan-500" /> {Math.round(drive.FreeGB)}G FREE</span>
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
+        </div>
+
         <div className={`${glassPanel} shrink-0 p-4`}>
           <div className="flex items-center justify-between mb-5">
             <span className="flex items-center gap-3 text-[11px] font-black tracking-[0.4em] text-zinc-500 uppercase">
@@ -562,7 +623,7 @@ function DashboardView({
           </div>
         </div>
 
-        <div className={`${glassPanel} flex-1 p-4 flex flex-col gap-3 min-h-0`}>
+        <div className={`${glassPanel} p-4 flex flex-col gap-3 shrink-0`}>
           <div className="flex items-center gap-2.5 text-[11px] font-black tracking-[0.25em] text-zinc-400 uppercase border-b border-white/[0.08] pb-4 mb-2">
             <RiLayoutGridLine size={14} className="text-violet-400" />
             CORE ANALYTICS
@@ -574,43 +635,21 @@ function DashboardView({
               return (
                 <div
                   key={i}
-                  className="bg-white/[0.015] hover:bg-white/[0.04] rounded-3xl p-4 flex flex-col justify-between border border-white/[0.04] hover:border-violet-500/20 transition-all duration-300 cursor-default relative overflow-hidden group/card"
+                  className="bg-white/[0.02] hover:bg-white/[0.05] rounded-2xl p-4 flex flex-col justify-between border border-white/[0.04] hover:border-violet-500/20 transition-all duration-300 cursor-default relative overflow-hidden group/card"
                 >
-                  <div className={`absolute top-0 right-0 w-12 h-12 ${fillClass} opacity-[0.02] blur-xl rounded-full translate-x-1/2 -translate-y-1/2 group-hover/card:opacity-[0.08] transition-opacity`} />
-                  <div className="flex justify-between items-start mb-3 relative z-10">
-                    <div className={`p-2 rounded-xl bg-current opacity-[0.1] border border-current ${m.color}`} />
-                    <span className="absolute left-2 text-current">{m.icon}</span>
-                    <span className="text-[9px] font-black font-mono text-zinc-500 tracking-[0.2em] mt-1 uppercase">{m.label}</span>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className={`${m.color} bg-current/10 p-1.5 rounded-lg text-base`}>{m.icon}</span>
+                    <span className="text-[8px] font-black text-zinc-500 tracking-wider uppercase">{m.label}</span>
                   </div>
-                  <span className={`text-[22px] font-black ${m.color} tracking-tight leading-none mb-2 tabular-nums relative z-10`}>{m.val}</span>
-                  <div className="w-full h-1 bg-black/40 rounded-full mt-2 overflow-hidden border border-white/[0.02]">
-                    <div className={`h-full rounded-full transition-all duration-1000 ease-out ${fillClass}`} style={{ width: `${percent}%` }} />
+                  <div className="mt-2">
+                    <span className={`text-[20px] font-black ${m.color} tracking-tight tabular-nums`}>{m.val}</span>
+                    <div className="w-full h-1 bg-black/40 rounded-full mt-2 overflow-hidden border border-white/[0.02]">
+                      <div className={`h-full rounded-full transition-all duration-1000 ease-out ${fillClass}`} style={{ width: `${percent}%` }} />
+                    </div>
                   </div>
                 </div>
               )
             })}
-          </div>
-
-          <div className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-2.5 min-h-0 flex-1 overflow-y-auto">
-            <div className="mb-2 text-[9px] font-mono tracking-widest text-zinc-500">DISK USAGE</div>
-            <div className="space-y-2">
-              {drives.length === 0 && <div className="text-[10px] text-zinc-600">No drive telemetry</div>}
-              {drives.slice(0, 4).map((drive) => {
-                const used = Math.max(0, drive.TotalGB - drive.FreeGB)
-                const usedPct = drive.TotalGB > 0 ? Math.round((used / drive.TotalGB) * 100) : 0
-                return (
-                  <div key={String(drive.Name)}>
-                    <div className="mb-1 flex items-center justify-between text-[10px] text-zinc-400">
-                      <span>{drive.Name}:\\</span>
-                      <span className="tabular-nums">{usedPct}%</span>
-                    </div>
-                    <div className="h-1.5 w-full rounded-full bg-black/60">
-                      <div className="h-full rounded-full bg-cyan-500/70" style={{ width: `${usedPct}%` }} />
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
           </div>
         </div>
       </div>
