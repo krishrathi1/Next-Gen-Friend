@@ -58,7 +58,7 @@ const openMessagingAppOrThrow = async (appName: string) => {
 const focusChatFromSearch = async (recipient: string) => {
   await runGhostSequenceOrThrow(
     [
-      { type: 'wait', ms: 2200 },
+      { type: 'wait', ms: 3500 },
       { type: 'click' },
       { type: 'press', key: 'f', modifiers: ['control'] },
       { type: 'wait', ms: 450 },
@@ -78,7 +78,7 @@ const focusChatFromSearch = async (recipient: string) => {
 const focusChatFromNewChat = async (recipient: string) => {
   await runGhostSequenceOrThrow(
     [
-      { type: 'wait', ms: 1300 },
+      { type: 'wait', ms: 2500 },
       { type: 'click' },
       { type: 'press', key: 'n', modifiers: ['control'] },
       { type: 'wait', ms: 600 },

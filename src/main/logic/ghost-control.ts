@@ -1,4 +1,4 @@
-import { IpcMain, app, shell, clipboard, screen } from 'electron'
+import { IpcMain, BrowserWindow, app, shell, clipboard, screen } from 'electron'
 import { keyboard, Key, mouse, Point, Button } from '@nut-tree-fork/nut-js'
 import screenshot from 'screenshot-desktop'
 import loudness from 'loudness'
@@ -85,7 +85,10 @@ function generateHumanPath(start: Point, end: Point): Point[] {
   return pathArray
 }
 
-export default function registerGhostControl(ipcMain: IpcMain) {
+export default function registerGhostControl(
+  ipcMain: IpcMain,
+  getMainWindow?: () => BrowserWindow | null
+) {
   ipcMain.handle('copy-file-to-clipboard', async (_event, filePath: string) => {
     return new Promise((resolve) => {
       const cmd = `powershell -command "Set-Clipboard -Path '${filePath}'"`
@@ -98,6 +101,16 @@ export default function registerGhostControl(ipcMain: IpcMain) {
   })
 
   ipcMain.handle('ghost-sequence', async (_event, actions: any[]) => {
+    const win = getMainWindow?.()
+    const wasFullScreen = win?.isFullScreen() ?? false
+    const wasVisible = win?.isVisible() ?? false
+
+    if (win) {
+      if (wasFullScreen) win.setFullScreen(false)
+      win.minimize()
+      await new Promise((r) => setTimeout(r, 500))
+    }
+
     try {
       for (const action of actions) {
         if (action.type === 'paste') {
@@ -134,6 +147,16 @@ export default function registerGhostControl(ipcMain: IpcMain) {
       return true
     } catch (e) {
       return false
+    } finally {
+      if (win && wasVisible) {
+        await new Promise((r) => setTimeout(r, 300))
+        if (wasFullScreen) {
+          win.setFullScreen(true)
+        } else {
+          win.restore()
+          win.show()
+        }
+      }
     }
   })
 
