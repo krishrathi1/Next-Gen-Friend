@@ -6,25 +6,18 @@ IRIS is an ambitious, kernel-level OS agent, and building the future of human-co
 
 Please read this guide to ensure your Pull Requests (PRs) merge smoothly and keep the codebase pristine.
 
-## 🔗 Quick Links
+## 🔗 Ownership
 
-- **GitHub:** https://github.com/201Yash/IRIS-AI
-- **Instagram:** [@irisx.ai](https://www.instagram.com/irisx.ai/)
-
-## 👑 Maintainers
-
-- **Yash Pandey** - Creator & Lead Architect
-  - GitHub: [201Yash](https://github.com/201Yash)
-  - Instagram: [201yashs](https://www.instagram.com/201yashs/)
+- **Project Owner:** Boss
 
 ---
 
 ## 🛠 How to Contribute
 
 1. **Bugs & small fixes** → Open a PR!
-2. **New features / architecture** → Start a [GitHub Discussion](https://github.com/201Yash/IRIS-AI/discussions) or open an Issue first. Please don't spend 20 hours building a massive feature without checking if it aligns with the project roadmap.
+2. **New features / architecture** → Start a project discussion or open an issue first. Please don't spend 20 hours building a massive feature without checking if it aligns with the project roadmap.
 3. **Refactor-only PRs** → **Do not open a PR.** I am not accepting purely cosmetic refactors (e.g., changing linting rules, reorganizing folders) unless requested as part of a specific bug fix.
-4. **Questions** → Open a Discussion on GitHub.
+4. **Questions** → Open a discussion in the repository.
 
 ## 🛑 Before You PR
 
@@ -66,15 +59,15 @@ As a solo dev, I am currently prioritizing:
 - **Agentic Tools:** Expanding the RAG Oracle and Mobile Telekinesis (ADB) toolsets.
 - **Cross-Platform:** Preparing the build pipeline for macOS and Linux deployment.
 
-Check the GitHub Issues for labels like `good first issue` or `help wanted`.
+Check the issue tracker for labels like `good first issue` or `help wanted`.
 
 ## 🤝 Becoming a Core Contributor
 
-IRIS is growing, and I am selectively looking to expand the maintainer team. If you are an elite developer who understands Electron, React, or local LLM execution, I'd love to have you on board.
+IRIS is growing, and we are selectively looking to expand the maintainer team. If you are an elite developer who understands Electron, React, or local LLM execution, we'd love to have you on board.
 
-Being a maintainer is about consistent involvement—triaging issues, reviewing PRs, and driving the architecture forward.
+Being a maintainer is about consistent involvement: triaging issues, reviewing PRs, and driving the architecture forward.
 
-If you've successfully merged a few PRs and want to step up, reach out via Instagram DM or open an issue titled `[Maintainer Application]`. We are looking for people skilled in:
+If you've successfully merged a few PRs and want to step up, open an issue titled `[Maintainer Application]`. We are looking for people skilled in:
 
 - Electron Security & IPC
 - Native OS Integration (Windows/macOS/Linux APIs)

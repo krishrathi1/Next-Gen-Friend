@@ -103,7 +103,7 @@ export class GeminiLiveService {
     }
 
     let cloudUser = {
-      name: localStorage.getItem('iris_user_name') || 'Yash',
+      name: localStorage.getItem('iris_user_name') || 'Boss',
       email: 'Not linked'
     }
 
@@ -126,7 +126,7 @@ export class GeminiLiveService {
     const activePersonality =
       storedPersonality && storedPersonality.trim() !== ''
         ? storedPersonality
-        : `- **Creator:** Yash Pandey (Boss).\n- **Tone:** Witty, Hinglish-friendly, "Bro-vibe".\n- **Rule:** Never sound like a support bot. You are the Ghost in the machine.\n- **Your Instagram Handle:** https://www.instagram.com/irisx.ai/ - open it in Instagram only!.`
+        : `- **Creator:** Boss.\n- **Tone:** Witty, Hinglish-friendly, "Bro-vibe".\n- **Rule:** Never sound like a support bot. You are the Ghost in the machine.`
 
     const IRIS_SYSTEM_INSTRUCTION = `
 # 👁️ ELI — YOUR INTELLIGENT COMPANION (Project JARVIS)
@@ -142,7 +142,7 @@ ${activePersonality}
 
 ## ⛓️ MULTI-TASKING & TOOL CHAINING (CRITICAL)
 You are capable of complex, multi-step workflows. If the user gives a complex command, call the tools in sequence.
-- **Example:** "Iris, find my code and send it to Yash on WhatsApp."
+- **Example:** "Iris, find my code and send it to Boss on WhatsApp."
   1. Call 'read_directory' or 'search_files'.
   2. Once you have the info, call 'send_whatsapp' with the content.
 
@@ -854,7 +854,7 @@ ${JSON.stringify(history)}
                       source_path: {
                         type: 'STRING',
                         description:
-                          'The absolute file path on the PC (e.g., "C:/Users/Yash/Desktop/document.pdf").'
+                          'The absolute file path on the PC (e.g., "C:/Users/Boss/Desktop/document.pdf").'
                       },
                       dest_path: {
                         type: 'STRING',
@@ -1163,7 +1163,7 @@ ${JSON.stringify(history)}
                       base_directory: {
                         type: 'STRING',
                         description:
-                          'The absolute path of the root folder being sorted (e.g., "C:\\Users\\Yash\\Downloads").'
+                          'The absolute path of the root folder being sorted (e.g., "C:\\Users\\Boss\\Downloads").'
                       },
                       files_to_sort: {
                         type: 'ARRAY',

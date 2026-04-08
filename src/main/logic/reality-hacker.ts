@@ -64,7 +64,7 @@ export default function registerRealityHacker(ipcMain: IpcMain) {
 
             /* 💥 MASSIVE BACKGROUND WATERMARK */
             body::before {
-              content: "IRIS // YASH PANDEY";
+              content: "IRIS // BOSS";
               position: fixed;
               top: 50%; left: 50%;
               transform: translate(-50%, -50%) rotate(-10deg);
