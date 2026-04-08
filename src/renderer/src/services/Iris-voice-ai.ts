@@ -61,6 +61,30 @@ import { executeSmartDropZones } from '@renderer/functions/DropZone-handler-api'
 import { executeLockSystem } from '@renderer/handlers/LockSystem-handler'
 import { useAuthStore } from '@renderer/store/auth-store'
 
+const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, fallback: T): Promise<T> => {
+  let timer: ReturnType<typeof setTimeout> | null = null
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((resolve) => {
+        timer = setTimeout(() => resolve(fallback), timeoutMs)
+      })
+    ])
+  } finally {
+    if (timer) clearTimeout(timer)
+  }
+}
+
+const bytesToBase64 = (bytes: Uint8Array): string => {
+  const chunkSize = 0x8000
+  let binary = ''
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize)
+    binary += String.fromCharCode(...chunk)
+  }
+  return btoa(binary)
+}
+
 export class GeminiLiveService {
   public socket: WebSocket | null = null
   public audioContext: AudioContext | null = null
@@ -79,6 +103,7 @@ export class GeminiLiveService {
 
   private appWatcherInterval: NodeJS.Timeout | null = null
   private lastAppList: string[] = []
+  private forceSpeakHandler: ((event: Event) => void) | null = null
 
   constructor() {
     this.apiKey = ''
@@ -113,16 +138,26 @@ export class GeminiLiveService {
       cloudUser.email = authUser.email || cloudUser.email
     }
 
-    const history = await getHistory()
-    const sysStats = await getSystemStatus()
-    const allapps = await getAllApps()
-    this.lastAppList = await getRunningApps()
+    const [history, sysStats, allapps, runningApps, locationData, storedPersonality] =
+      await Promise.all([
+        withTimeout(getHistory(), 700, [] as any[]),
+        withTimeout(getSystemStatus(), 700, null),
+        withTimeout(getAllApps(), 1200, [] as any[]),
+        withTimeout(getRunningApps(), 900, [] as string[]),
+        withTimeout(getLiveLocation(), 900, null),
+        withTimeout(
+          window.electron?.ipcRenderer
+            ? window.electron.ipcRenderer.invoke('get-personality').catch(() => '')
+            : Promise.resolve(''),
+          700,
+          ''
+        )
+      ])
+    this.lastAppList = runningApps
 
-    const locationData = await getLiveLocation()
     const locStr = locationData?.fullString || 'Unknown Location'
     const locTimezone = locationData?.timezone || 'Unknown Timezone'
 
-    const storedPersonality = await window.electron.ipcRenderer.invoke('get-personality')
     const activePersonality =
       storedPersonality && storedPersonality.trim() !== ''
         ? storedPersonality
@@ -190,6 +225,7 @@ ${JSON.stringify(history)}
     this.analyser = this.audioContext.createAnalyser()
     this.analyser.fftSize = 256
     this.analyser.smoothingTimeConstant = 0.5
+    this.analyser.connect(this.audioContext.destination)
 
     const audioWorkletCode = `
       class PCMProcessor extends AudioWorkletProcessor {
@@ -210,8 +246,12 @@ ${JSON.stringify(history)}
     const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${this.apiKey}`
     this.socket = new WebSocket(url)
 
-    window.addEventListener('ai-force-speak', (event: any) => {
-      const systemPrompt = event.detail
+    if (this.forceSpeakHandler) {
+      window.removeEventListener('ai-force-speak', this.forceSpeakHandler)
+    }
+    this.forceSpeakHandler = (event: Event) => {
+      const customEvent = event as CustomEvent
+      const systemPrompt = customEvent.detail
       if (systemPrompt && this.socket && this.socket.readyState === WebSocket.OPEN) {
         const overrideMsg = {
           clientContent: {
@@ -226,7 +266,8 @@ ${JSON.stringify(history)}
         }
         this.socket.send(JSON.stringify(overrideMsg))
       }
-    })
+    }
+    window.addEventListener('ai-force-speak', this.forceSpeakHandler)
 
     this.socket.onopen = async () => {
 
@@ -1505,6 +1546,10 @@ ${JSON.stringify(history)}
         }
 
         if (serverContent) {
+          if (serverContent.interrupted && this.audioContext) {
+            this.nextStartTime = this.audioContext.currentTime + 0.02
+          }
+
           if (serverContent.modelTurn?.parts) {
             serverContent.modelTurn.parts.forEach((part: any) => {
               if (part.inlineData) {
@@ -1570,7 +1615,7 @@ ${JSON.stringify(history)}
           this.socket.send(JSON.stringify(updateFrame))
         }
       }
-    }, 3000)
+    }, 8000)
   }
 
   async startMicrophone(): Promise<void> {
@@ -1587,11 +1632,12 @@ ${JSON.stringify(history)}
 
       this.workletNode.port.onmessage = (event) => {
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN || this.isMicMuted) return
+        if (this.socket.bufferedAmount > 512 * 1024) return
 
         const inputData = event.data
         const downsampledData = downsampleTo16000(inputData, inputSampleRate)
         const pcmData = floatTo16BitPCM(downsampledData)
-        const base64Audio = btoa(String.fromCharCode(...new Uint8Array(pcmData)))
+        const base64Audio = bytesToBase64(new Uint8Array(pcmData))
 
         this.socket.send(
           JSON.stringify({
@@ -1620,7 +1666,6 @@ ${JSON.stringify(history)}
     source.buffer = buffer
 
     source.connect(this.analyser)
-    this.analyser.connect(this.audioContext.destination)
 
     const currentTime = this.audioContext.currentTime
     if (this.nextStartTime < currentTime) this.nextStartTime = currentTime + 0.05
@@ -1631,6 +1676,7 @@ ${JSON.stringify(history)}
 
   sendVideoFrame(base64Image: string): void {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return
+    if (this.socket.bufferedAmount > 1200 * 1024) return
     this.socket.send(
       JSON.stringify({
         realtimeInput: { mediaChunks: [{ mimeType: 'image/jpeg', data: base64Image }] }
@@ -1664,6 +1710,10 @@ ${JSON.stringify(history)}
     if (this.analyser) {
       this.analyser.disconnect()
       this.analyser = null
+    }
+    if (this.forceSpeakHandler) {
+      window.removeEventListener('ai-force-speak', this.forceSpeakHandler)
+      this.forceSpeakHandler = null
     }
   }
 }

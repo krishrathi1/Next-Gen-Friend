@@ -1,4 +1,4 @@
-import { useState, useEffect, Suspense, lazy } from 'react'
+import { useState, useEffect, Suspense, lazy, useRef } from 'react'
 import {
   RiWifiLine,
   RiShieldFlashLine,
@@ -55,22 +55,37 @@ const ELI = (props: EliProps) => {
   const [time, setTime] = useState<Date>(new Date())
   const [chatHistory, setChatHistory] = useState<any[]>([])
   const [showSourceModal, setShowSourceModal] = useState(false)
+  const lastHistorySigRef = useRef('')
 
   useEffect(() => {
-    const timer = setInterval(() => {
+    const clockTimer = setInterval(() => {
       setTime(new Date())
+    }, 1000)
+    const statsTimer = setInterval(() => {
       getSystemStatus().then(setStats)
-    }, 500)
-    return () => clearInterval(timer)
+    }, 2000)
+
+    getSystemStatus().then(setStats)
+
+    return () => {
+      clearInterval(clockTimer)
+      clearInterval(statsTimer)
+    }
   }, [])
 
   useEffect(() => {
     const fetchHistory = async () => {
       const history = await getHistory()
-      if (Array.isArray(history)) setChatHistory(history.slice(-15))
+      if (!Array.isArray(history)) return
+      const trimmed = history.slice(-15)
+      const signature = JSON.stringify(trimmed)
+      if (signature !== lastHistorySigRef.current) {
+        lastHistorySigRef.current = signature
+        setChatHistory(trimmed)
+      }
     }
     fetchHistory()
-    const interval = setInterval(fetchHistory, 500)
+    const interval = setInterval(fetchHistory, 1200)
     return () => clearInterval(interval)
   }, [])
 

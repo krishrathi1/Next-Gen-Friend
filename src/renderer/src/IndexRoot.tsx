@@ -31,6 +31,7 @@ const IndexRoot = () => {
   const processingVideoRef = useRef<HTMLVideoElement>(document.createElement('video'))
   const activeStreamRef = useRef<MediaStream | null>(null)
   const aiIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const frameCanvasRef = useRef<HTMLCanvasElement | null>(null)
 
   useEffect(() => {
     window.electron.ipcRenderer.on('overlay-mode', (_e, mode) => setIsOverlay(mode))
@@ -150,21 +151,23 @@ const IndexRoot = () => {
 
   const startAIProcessing = () => {
     if (aiIntervalRef.current) clearInterval(aiIntervalRef.current)
+    if (!frameCanvasRef.current) frameCanvasRef.current = document.createElement('canvas')
 
     aiIntervalRef.current = setInterval(() => {
       const vid = processingVideoRef.current
       if (vid && vid.readyState === 4 && irisService.socket?.readyState === WebSocket.OPEN) {
-        const canvas = document.createElement('canvas')
-        canvas.width = 800
-        canvas.height = 450
+        if (irisService.socket.bufferedAmount > 1024 * 1024) return
+        const canvas = frameCanvasRef.current!
+        canvas.width = 640
+        canvas.height = 360
         const ctx = canvas.getContext('2d')
         if (ctx) {
           ctx.drawImage(vid, 0, 0, canvas.width, canvas.height)
-          const base64 = canvas.toDataURL('image/jpeg', 0.6).split(',')[1]
+          const base64 = canvas.toDataURL('image/jpeg', 0.45).split(',')[1]
           irisService.sendVideoFrame(base64)
         }
       }
-    }, 2000)
+    }, 2400)
   }
 
   if (isOverlay) {
