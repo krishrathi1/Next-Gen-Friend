@@ -103,8 +103,10 @@ export default function registerGhostControl(ipcMain: IpcMain) {
         if (action.type === 'paste') {
           clipboard.writeText(action.text)
           await new Promise((r) => setTimeout(r, 200))
-          await keyboard.pressKey(Key.LeftControl, Key.V)
-          await keyboard.releaseKey(Key.V, Key.LeftControl)
+          await keyboard.pressKey(Key.LeftControl)
+          await keyboard.pressKey(Key.V)
+          await keyboard.releaseKey(Key.V)
+          await keyboard.releaseKey(Key.LeftControl)
         } else if (action.type === 'wait') {
           await new Promise((r) => setTimeout(r, action.ms || 500))
         } else if (action.type === 'type') {
