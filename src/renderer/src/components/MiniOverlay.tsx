@@ -67,8 +67,7 @@ const MiniOverlay = ({
   }
 
   return (
-    <div className="w-full h-full p-1.5">
-      <div className="mini-overlay-shell drag-region relative w-full h-full flex items-center justify-between px-3 bg-zinc-950/85 backdrop-blur-2xl rounded-[999px] border border-purple-700/35 overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.5)]">
+    <div className="mini-overlay-shell drag-region relative w-full h-full flex items-center justify-between px-3 bg-zinc-950/85 backdrop-blur-2xl rounded-[999px] border border-purple-700/35 overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.5)]">
         <div className="pointer-events-none absolute inset-y-1 left-1 w-20 rounded-l-full bg-[radial-gradient(circle_at_left,rgba(168,85,247,0.28),transparent_70%)]" />
         <div className="pointer-events-none absolute inset-y-1 right-1 w-20 rounded-r-full bg-[radial-gradient(circle_at_right,rgba(45,212,191,0.2),transparent_70%)]" />
         <div className="mini-overlay-sweep pointer-events-none absolute inset-0" />
@@ -141,7 +140,6 @@ const MiniOverlay = ({
             <RiDragMove2Fill size={14} />
           </div>
         </div>
-      </div>
     </div>
   )
 }
