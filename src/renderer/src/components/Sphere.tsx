@@ -9,6 +9,7 @@ const CustomParticleSphere = ({ count = 3000 }) => {
   const dataArray = useMemo(() => new Uint8Array(128), [])
   const colorA = useMemo(() => new THREE.Color('#33db12'), [])
   const colorB = useMemo(() => new THREE.Color('#ffffff'), [])
+  const tempColor = useMemo(() => new THREE.Color(), [])
 
   const { positions, originalPositions, spreadFactors } = useMemo(() => {
     const pos = new Float32Array(count * 3)
@@ -49,8 +50,8 @@ const CustomParticleSphere = ({ count = 3000 }) => {
       volume = avg / 128
     }
 
-    const color = colorA.clone().lerp(colorB, volume)
-    ;(mesh.current.material as THREE.PointsMaterial).color = color
+    tempColor.copy(colorA).lerp(colorB, volume)
+    ;(mesh.current.material as THREE.PointsMaterial).color.copy(tempColor)
 
     const currentPos = mesh.current.geometry.attributes.position.array as Float32Array
 

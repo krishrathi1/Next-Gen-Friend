@@ -1,18 +1,18 @@
-import { memo, useState, useEffect, Suspense, lazy, useRef } from 'react'
+﻿import { memo, useEffect, useRef, useState, Suspense, lazy } from 'react'
 import {
-  RiWifiLine,
-  RiShieldFlashLine,
-  RiLayoutGridLine,
+  RiAppsLine,
+  RiBatteryChargeLine,
   RiBrainLine,
+  RiCameraLine,
+  RiCloseLine,
+  RiComputerLine,
   RiFolderOpenLine,
+  RiImageLine,
+  RiLayoutGridLine,
   RiPhoneLine,
   RiSettings4Line,
-  RiBatteryChargeLine,
-  RiCameraLine,
-  RiComputerLine,
-  RiCloseLine,
-  RiImageLine,
-  RiAppsLine
+  RiShieldFlashLine,
+  RiWifiLine
 } from 'react-icons/ri'
 import { getDrives, DriveInfo, getSystemStatus, SystemStats } from '@renderer/services/system-info'
 import { getHistory } from '@renderer/services/iris-ai-brain'
@@ -75,16 +75,14 @@ const ELI = (props: EliProps) => {
   const [networkDownlinkMbps, setNetworkDownlinkMbps] = useState<number | null>(null)
   const [networkType, setNetworkType] = useState<string>('unknown')
   const [drives, setDrives] = useState<DriveInfo[]>([])
-  const [metricHistory, setMetricHistory] = useState<{ cpu: number[]; ram: number[] }>({
-    cpu: [],
-    ram: []
-  })
+  const [metricHistory, setMetricHistory] = useState<{ cpu: number[]; ram: number[] }>({ cpu: [], ram: [] })
   const [chatHistory, setChatHistory] = useState<any[]>([])
   const [showSourceModal, setShowSourceModal] = useState(false)
   const lastHistorySigRef = useRef('')
 
   useEffect(() => {
     const appendPoint = (series: number[], value: number) => [...series.slice(-29), value]
+
     const pollStats = async () => {
       const nextStats = await getSystemStatus()
       setStats(nextStats)
@@ -97,6 +95,7 @@ const ELI = (props: EliProps) => {
         }))
       }
     }
+
     const pollDrives = async () => {
       const next = await getDrives()
       setDrives(Array.isArray(next) ? next : [])
@@ -135,7 +134,7 @@ const ELI = (props: EliProps) => {
     const conn = (navigator as any).connection
     if (!conn) return
 
-    const syncRtt = () => {
+    const syncNetwork = () => {
       const rtt = Number(conn.rtt)
       setNetworkRttMs(Number.isFinite(rtt) && rtt > 0 ? rtt : null)
       const downlink = Number(conn.downlink)
@@ -143,9 +142,9 @@ const ELI = (props: EliProps) => {
       setNetworkType(conn.effectiveType || 'unknown')
     }
 
-    syncRtt()
-    conn.addEventListener?.('change', syncRtt)
-    return () => conn.removeEventListener?.('change', syncRtt)
+    syncNetwork()
+    conn.addEventListener?.('change', syncNetwork)
+    return () => conn.removeEventListener?.('change', syncNetwork)
   }, [])
 
   useEffect(() => {
@@ -162,6 +161,7 @@ const ELI = (props: EliProps) => {
         setChatHistory(trimmed)
       }
     }
+
     fetchHistory()
     const interval = setInterval(fetchHistory, 1200)
     return () => clearInterval(interval)
@@ -175,13 +175,12 @@ const ELI = (props: EliProps) => {
     }
   }
 
+  const isTyping =
+    props.isSystemActive && chatHistory.length > 0 && chatHistory[chatHistory.length - 1]?.role === 'user'
+
   return (
     <div className="h-screen w-full bg-[#040407] text-zinc-100 font-sans overflow-hidden select-none flex flex-col relative pb-5">
-      
-      {/* ── Top Navigation Bar ── */}
       <div className="h-[52px] w-full flex items-center justify-between px-4 bg-[#07070d]/90 border-b border-white/[0.05] z-50 backdrop-blur-xl shrink-0">
-        
-        {/* Logo */}
         <div className="hidden lg:flex items-center gap-2.5">
           <div className="relative flex items-center justify-center w-7 h-7">
             <div className="absolute w-full h-full rounded-lg bg-violet-600/10 border border-violet-500/20" />
@@ -189,13 +188,10 @@ const ELI = (props: EliProps) => {
           </div>
           <div className="flex flex-col leading-none">
             <span className="font-bold tracking-[0.15em] text-[13px] text-white">ELI AI</span>
-            <span className="text-[9px] font-medium text-violet-400/50 tracking-[0.2em] uppercase">
-              Neural Interface
-            </span>
+            <span className="text-[9px] font-medium text-violet-400/50 tracking-[0.2em] uppercase">Neural Interface</span>
           </div>
         </div>
 
-        {/* Tab Navigation */}
         <div className="hidden md:flex gap-0.5 bg-white/[0.03] p-1 rounded-xl border border-white/[0.05]">
           {TABS.map((tab) => {
             const isActive = activeTab === tab.id
@@ -209,9 +205,7 @@ const ELI = (props: EliProps) => {
                     : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]'
                 }`}
               >
-                <span className={`transition-colors ${isActive ? 'text-violet-400' : 'text-zinc-600'}`}>
-                  {tab.icon}
-                </span>
+                <span className={`transition-colors ${isActive ? 'text-violet-400' : 'text-zinc-600'}`}>{tab.icon}</span>
                 {tab.label}
                 {isActive && (
                   <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full bg-violet-500/60" />
@@ -221,13 +215,10 @@ const ELI = (props: EliProps) => {
           })}
         </div>
 
-        {/* Status Bar */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 text-[10px] font-mono text-violet-400/60">
             <RiWifiLine size={12} />
-            <span className="hidden sm:block tracking-wide">
-              {props.isSystemActive ? 'LINKED' : 'IDLE'}
-            </span>
+            <span className="hidden sm:block tracking-wide">{props.isSystemActive ? 'LINKED' : 'IDLE'}</span>
           </div>
           <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-mono text-zinc-600">
             <RiBatteryChargeLine size={12} />
@@ -239,8 +230,15 @@ const ELI = (props: EliProps) => {
         </div>
       </div>
 
-      {/* ── Content Area ── */}
       <div className="flex-1 overflow-hidden relative bg-[radial-gradient(ellipse_at_top,rgba(124,58,237,0.04)_0%,transparent_60%)]">
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.04]"
+          style={{
+            backgroundImage: 'radial-gradient(circle, #a78bfa 1px, transparent 1px)',
+            backgroundSize: '28px 28px'
+          }}
+        />
+
         <div className={`absolute inset-0 ${activeTab === 'DASHBOARD' ? 'block' : 'hidden'}`}>
           <DashboardView
             props={props}
@@ -252,6 +250,7 @@ const ELI = (props: EliProps) => {
             cpuHistory={metricHistory.cpu}
             ramHistory={metricHistory.ram}
             chatHistory={chatHistory}
+            isTyping={isTyping}
             onVisionClick={handleVisionClick}
           />
         </div>
@@ -269,7 +268,6 @@ const ELI = (props: EliProps) => {
         </Suspense>
       </div>
 
-      {/* ── Vision Source Modal ── */}
       {showSourceModal && (
         <div
           className="absolute inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-md animate-float-up"
@@ -279,13 +277,10 @@ const ELI = (props: EliProps) => {
             className={`${glassPanel} w-[380px] border-violet-500/15 flex flex-col overflow-hidden shadow-[0_24px_80px_rgba(0,0,0,0.6)] rounded-2xl`}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.05] bg-white/[0.02]">
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-violet-500 shadow-[0_0_6px_rgba(139,92,246,0.7)]" />
-                <span className="text-[11px] font-semibold tracking-widest text-violet-300 uppercase">
-                  Select Vision Source
-                </span>
+                <span className="text-[11px] font-semibold tracking-widest text-violet-300 uppercase">Select Vision Source</span>
               </div>
               <button
                 onClick={() => setShowSourceModal(false)}
@@ -295,7 +290,6 @@ const ELI = (props: EliProps) => {
               </button>
             </div>
 
-            {/* Modal Options */}
             <div className="p-4 grid grid-cols-2 gap-3">
               <button
                 onClick={() => {

@@ -1,4 +1,4 @@
-﻿import { Component, ErrorInfo, ReactNode, memo, useCallback, useEffect, useRef, useState } from 'react'
+﻿import { Component, ErrorInfo, ReactNode, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Sphere from '@renderer/components/Sphere'
 import {
   RiCameraLine,
@@ -33,6 +33,13 @@ interface IrisProps {
   activeStream: MediaStream | null
 }
 
+type TranscriptMessage = {
+  role: string
+  content?: string
+  parts?: Array<{ text?: string }>
+  timestamp?: string
+}
+
 interface DashboardViewProps {
   props: IrisProps
   stats: SystemStats | null
@@ -43,14 +50,16 @@ interface DashboardViewProps {
   cpuHistory: number[]
   ramHistory: number[]
   chatHistory: TranscriptMessage[]
+  isTyping: boolean
   onVisionClick: () => void
 }
 
-type TranscriptMessage = {
-  role: string
-  content?: string
-  parts?: Array<{ text?: string }>
-  timestamp?: string
+type MetricCard = {
+  icon: ReactNode
+  label: string
+  val: string
+  color: string
+  percent: number | null
 }
 
 const glassPanel =
@@ -60,6 +69,21 @@ const getMessageText = (msg: TranscriptMessage): string => {
   if (typeof msg.content === 'string' && msg.content.trim()) return msg.content
   if (Array.isArray(msg.parts) && msg.parts[0]?.text) return msg.parts[0].text
   return ''
+}
+
+const AudioWaveform = ({ isActive }: { isActive: boolean }) => {
+  const baseHeights = [5, 9, 12, 8, 6]
+  return (
+    <div className="ml-1 hidden sm:flex items-center gap-[2px] h-4">
+      {baseHeights.map((h, i) => (
+        <div
+          key={i}
+          className={`w-[2px] rounded-full bg-violet-400 ${isActive ? 'animate-pulse' : 'opacity-40'}`}
+          style={{ height: `${h}px`, animationDelay: `${i * 80}ms` }}
+        />
+      ))}
+    </div>
+  )
 }
 
 const Sparkline = ({ data, colorClass, label }: { data: number[]; colorClass: string; label: string }) => {
@@ -74,6 +98,11 @@ const Sparkline = ({ data, colorClass, label }: { data: number[]; colorClass: st
           .join(' ')
       : ''
 
+  const gradientId = useMemo(
+    () => `grad-${label.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}`,
+    [label]
+  )
+
   return (
     <div className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-2.5">
       <div className="mb-1.5 flex items-center justify-between">
@@ -83,7 +112,14 @@ const Sparkline = ({ data, colorClass, label }: { data: number[]; colorClass: st
         </span>
       </div>
       <svg viewBox="0 0 100 100" className="h-12 w-full">
-        <polyline points={points} fill="none" stroke="currentColor" strokeWidth="3" className={colorClass} />
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="currentColor" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {points && <polygon points={`0,100 ${points} 100,100`} fill={`url(#${gradientId})`} className={colorClass} />}
+        <polyline points={points} fill="none" stroke="currentColor" strokeWidth="2.5" className={colorClass} />
       </svg>
     </div>
   )
@@ -123,6 +159,7 @@ function DashboardView({
   cpuHistory,
   ramHistory,
   chatHistory,
+  isTyping,
   onVisionClick
 }: DashboardViewProps) {
   const {
@@ -137,12 +174,14 @@ function DashboardView({
   } = props
 
   const scrollRef = useRef<HTMLDivElement>(null)
-  const videoElementRef = useRef<HTMLVideoElement | null>(null)
   const mobileScrollRef = useRef<HTMLDivElement>(null)
+  const videoElementRef = useRef<HTMLVideoElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const faceScanInterval = useRef<NodeJS.Timeout | null>(null)
+
   const [modelsLoaded, setModelsLoaded] = useState(false)
   const [modelLoadError, setModelLoadError] = useState<string | null>(null)
+  const [mobilePanel, setMobilePanel] = useState<'metrics' | 'transcript'>('metrics')
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -151,7 +190,7 @@ function DashboardView({
     if (mobileScrollRef.current) {
       mobileScrollRef.current.scrollTo({ top: mobileScrollRef.current.scrollHeight, behavior: 'smooth' })
     }
-  }, [chatHistory])
+  }, [chatHistory, isTyping, mobilePanel])
 
   useEffect(() => {
     const loadModels = async () => {
@@ -164,7 +203,7 @@ function DashboardView({
         ])
         setModelsLoaded(true)
         setModelLoadError(null)
-      } catch (e) {
+      } catch {
         setModelLoadError('Vision models unavailable')
       }
     }
@@ -178,6 +217,7 @@ function DashboardView({
         const video = videoElementRef.current
         const canvas = canvasRef.current
         if (!video || !canvas || video.readyState !== 4 || video.videoWidth === 0) return
+
         try {
           const vw = video.videoWidth
           const vh = video.videoHeight
@@ -185,12 +225,14 @@ function DashboardView({
             canvas.width = vw
             canvas.height = vh
           }
+
           const ctx = canvas.getContext('2d')
           if (!ctx) return
+
           const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.3 })
           const detection = await faceapi.detectSingleFace(video, options).withFaceExpressions().withAgeAndGender()
-
           ctx.clearRect(0, 0, vw, vh)
+
           if (detection) {
             const { x, y, width, height } = detection.detection.box
             const mirroredX = vw - x - width
@@ -213,7 +255,7 @@ function DashboardView({
             ctx.stroke()
           }
         } catch {
-          // Keep feed alive even if one detection cycle fails.
+          // Keep feed resilient if a single frame fails.
         }
       }, 450)
     } else {
@@ -223,6 +265,7 @@ function DashboardView({
         ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
       }
     }
+
     return () => {
       if (faceScanInterval.current) clearInterval(faceScanInterval.current)
     }
@@ -236,7 +279,7 @@ function DashboardView({
         node.onloadedmetadata = () => node.play().catch(() => {})
       }
     },
-    [activeStream, isVideoOn, visionMode]
+    [activeStream, isVideoOn]
   )
 
   const setMobileVideoRef = useCallback(
@@ -246,43 +289,49 @@ function DashboardView({
         node.onloadedmetadata = () => node.play().catch(() => {})
       }
     },
-    [activeStream, isVideoOn, visionMode]
+    [activeStream, isVideoOn]
   )
 
   const toggleSource = () => {
     if (!isSystemActive) return
-    const nextMode = visionMode === 'camera' ? 'screen' : 'camera'
-    startVision(nextMode)
+    startVision(visionMode === 'camera' ? 'screen' : 'camera')
   }
 
-  const systemMetrics = [
+  const systemMetrics: MetricCard[] = [
     {
       icon: <RiCpuLine />,
       label: 'CPU',
       val: isSystemActive && stats ? `${stats.cpu}%` : '--',
-      color: 'text-blue-400'
+      color: 'text-blue-400',
+      percent: isSystemActive && stats ? Number(stats.cpu) : null
     },
     {
       icon: <FaMemory />,
       label: 'RAM',
       val: isSystemActive && stats ? `${stats.memory.usedPercentage}%` : '--',
-      color: 'text-violet-400'
+      color: 'text-violet-400',
+      percent: isSystemActive && stats ? Number(stats.memory.usedPercentage) : null
     },
     {
       icon: <GiTinker />,
       label: 'TEMP',
-      val: isSystemActive && stats && stats.temperature !== null ? `${stats.temperature}°` : '--',
-      color: 'text-amber-400'
+      val: isSystemActive && stats && stats.temperature !== null ? `${stats.temperature}deg` : '--',
+      color: 'text-amber-400',
+      percent:
+        isSystemActive && stats && stats.temperature !== null
+          ? Math.max(0, Math.min(100, (stats.temperature / 100) * 100))
+          : null
     },
     {
       icon: <HiComputerDesktop />,
       label: 'OS',
       val: isSystemActive && stats ? `${stats.os.type} ${stats.os.uptime}` : '--',
-      color: 'text-emerald-400'
+      color: 'text-emerald-400',
+      percent: null
     }
   ]
 
-  const transcriptPanel = (
+  const transcriptContent = (
     <>
       {chatHistory.length === 0 ? (
         <div className="h-full flex flex-col items-center justify-center text-zinc-700 gap-2.5 opacity-40">
@@ -308,6 +357,15 @@ function DashboardView({
             </span>
           </div>
         ))
+      )}
+      {isTyping && (
+        <div className="flex items-start">
+          <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl rounded-bl-sm px-3 py-2.5 flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+          </div>
+        </div>
       )}
     </>
   )
@@ -347,6 +405,13 @@ function DashboardView({
               muted
             />
             <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover pointer-events-none z-20" />
+            <div
+              className="absolute inset-0 pointer-events-none z-10 opacity-[0.06]"
+              style={{
+                backgroundImage:
+                  'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.5) 2px, rgba(0,0,0,0.5) 4px)'
+              }}
+            />
             {isVideoOn && visionMode === 'camera' && !modelsLoaded && !modelLoadError && (
               <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/55 text-[10px] font-mono tracking-widest text-violet-300">
                 Loading vision models...
@@ -382,6 +447,7 @@ function DashboardView({
               {isSystemActive ? 'CONNECTED' : 'STANDBY'}
             </span>
           </div>
+
           <div className="grid grid-cols-2 gap-2">
             <div>
               <p className="text-[9px] text-zinc-600 font-mono tracking-widest mb-0.5">LATENCY</p>
@@ -407,6 +473,17 @@ function DashboardView({
               </span>
             </div>
           </div>
+
+          <div className="flex items-end gap-0.5 mt-3">
+            {[1, 2, 3, 4, 5].map((bar) => (
+              <div
+                key={bar}
+                className={`w-2 rounded-sm transition-all duration-500 ${isSystemActive ? 'bg-violet-500' : 'bg-zinc-700'}`}
+                style={{ height: `${bar * 4}px`, opacity: isSystemActive ? 1 : 0.3 }}
+              />
+            ))}
+            <span className="ml-2 text-[9px] font-mono text-zinc-600">{isSystemActive ? 'STRONG' : 'NO SIGNAL'}</span>
+          </div>
         </div>
 
         <div className={`${glassPanel} p-3.5 shrink-0`}>
@@ -423,19 +500,27 @@ function DashboardView({
             Core Metrics
           </div>
           <div className="grid grid-cols-2 gap-2">
-            {systemMetrics.map((m, i) => (
-              <div
-                key={i}
-                className="bg-white/[0.02] hover:bg-white/[0.04] rounded-xl p-3 flex flex-col justify-between border border-white/[0.04] hover:border-white/[0.08] transition-all duration-200 cursor-default"
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <span className={`text-sm ${m.color}`}>{m.icon}</span>
-                  <span className="text-[8px] font-mono text-zinc-600 tracking-widest">{m.label}</span>
+            {systemMetrics.map((m, i) => {
+              const fillClass = m.color.replace('text-', 'bg-')
+              const percent = m.percent !== null && Number.isFinite(m.percent) ? Math.max(0, Math.min(100, m.percent)) : 0
+              return (
+                <div
+                  key={i}
+                  className="bg-white/[0.02] hover:bg-white/[0.04] rounded-xl p-3 flex flex-col justify-between border border-white/[0.04] hover:border-white/[0.08] transition-all duration-200 cursor-default"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <span className={`text-sm ${m.color}`}>{m.icon}</span>
+                    <span className="text-[8px] font-mono text-zinc-600 tracking-widest">{m.label}</span>
+                  </div>
+                  <span className={`text-base font-bold ${m.color} tabular-nums`}>{m.val}</span>
+                  <div className="w-full h-[2px] bg-black/40 rounded-full mt-2 overflow-hidden">
+                    <div className={`h-full rounded-full transition-all duration-700 ${fillClass}`} style={{ width: `${percent}%` }} />
+                  </div>
                 </div>
-                <span className={`text-base font-bold ${m.color} tabular-nums`}>{m.val}</span>
-              </div>
-            ))}
+              )
+            })}
           </div>
+
           <div className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-2.5 min-h-0 flex-1 overflow-y-auto">
             <div className="mb-2 text-[9px] font-mono tracking-widest text-zinc-500">DISK USAGE</div>
             <div className="space-y-2">
@@ -481,7 +566,7 @@ function DashboardView({
           </DashboardErrorBoundary>
         </div>
 
-        <div className="absolute bottom-8 z-50">
+        <div className="absolute bottom-32 lg:bottom-8 z-50">
           <div className="relative flex items-center gap-2 px-5 py-3 bg-[#09090e]/90 backdrop-blur-xl border border-white/[0.07] rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.6)]">
             <button
               onClick={onVisionClick}
@@ -523,20 +608,46 @@ function DashboardView({
             >
               {isMicMuted ? <RiMicOffLine size={18} /> : <RiMicLine size={18} />}
             </button>
+
+            <AudioWaveform isActive={isSystemActive && !isMicMuted} />
           </div>
         </div>
 
-        <div className="lg:hidden mt-4 w-full px-1 pb-28 grid grid-cols-2 gap-2">
-          <div className={`${glassPanel} p-3 col-span-2`}>
-            <div className="text-[10px] font-semibold tracking-widest text-zinc-500 uppercase mb-2">Live Metrics</div>
-            <div className="grid grid-cols-2 gap-2">
-              <Sparkline data={cpuHistory} colorClass="text-blue-400" label="CPU" />
-              <Sparkline data={ramHistory} colorClass="text-violet-400" label="RAM" />
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 px-3 pb-3">
+          <div className={`${glassPanel} p-2.5`}>
+            <div className="mb-2 flex items-center gap-2">
+              <button
+                onClick={() => setMobilePanel('metrics')}
+                className={`px-3 py-1 rounded-lg text-[10px] font-semibold tracking-wider ${
+                  mobilePanel === 'metrics'
+                    ? 'bg-violet-600/25 text-violet-300 border border-violet-500/30'
+                    : 'bg-white/[0.03] text-zinc-500 border border-white/[0.06]'
+                }`}
+              >
+                Metrics
+              </button>
+              <button
+                onClick={() => setMobilePanel('transcript')}
+                className={`px-3 py-1 rounded-lg text-[10px] font-semibold tracking-wider ${
+                  mobilePanel === 'transcript'
+                    ? 'bg-violet-600/25 text-violet-300 border border-violet-500/30'
+                    : 'bg-white/[0.03] text-zinc-500 border border-white/[0.06]'
+                }`}
+              >
+                Transcript
+              </button>
             </div>
-          </div>
-          <div className={`${glassPanel} p-3 col-span-2 max-h-40 overflow-y-auto`} ref={mobileScrollRef}>
-            <div className="text-[10px] font-semibold tracking-widest text-zinc-500 uppercase mb-2">Transcript</div>
-            <div className="space-y-2">{transcriptPanel}</div>
+
+            {mobilePanel === 'metrics' ? (
+              <div className="grid grid-cols-2 gap-2">
+                <Sparkline data={cpuHistory} colorClass="text-blue-400" label="CPU" />
+                <Sparkline data={ramHistory} colorClass="text-violet-400" label="RAM" />
+              </div>
+            ) : (
+              <div ref={mobileScrollRef} className="max-h-40 overflow-y-auto space-y-2.5 pr-1">
+                {transcriptContent}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -548,11 +659,14 @@ function DashboardView({
               <RiTerminalBoxLine size={12} />
               Transcript
             </span>
-            <span className="text-[9px] font-mono text-violet-500/40 tracking-widest">LIVE</span>
+            <span className="flex items-center gap-1 text-[9px] font-mono text-violet-500/40 tracking-widest">
+              <span className={`w-1 h-1 rounded-full bg-violet-500 ${chatHistory.length > 0 ? 'animate-pulse' : 'opacity-30'}`} />
+              LIVE
+            </span>
           </div>
 
           <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-2.5 pr-1 scrollbar-small min-h-0">
-            {transcriptPanel}
+            {transcriptContent}
           </div>
         </div>
       </div>
