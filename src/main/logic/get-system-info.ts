@@ -77,63 +77,73 @@ async function getGpuUsage() {
   }
 }
 
+// Shared state for background monitoring
+let currentSystemStats = {
+  cpu: '0.0',
+  gpu: '0.0',
+  memory: { total: '0', free: '0', usedPercentage: '0.0' },
+  temperature: null as number | null,
+  uptime: '0h'
+}
+
+// Low latency CPU monitoring (runs frequently)
+const startCpuMonitor = () => {
+  setInterval(() => {
+    currentSystemStats.cpu = getSystemCpuUsage()
+    const totalMem = os.totalmem()
+    const freeMem = os.freemem()
+    currentSystemStats.memory = {
+      total: (totalMem / 1024 ** 3).toFixed(1) + ' GB',
+      free: (freeMem / 1024 ** 3).toFixed(1) + ' GB',
+      usedPercentage: (((totalMem - freeMem) / totalMem) * 100).toFixed(1)
+    }
+    currentSystemStats.uptime = (os.uptime() / 3600).toFixed(1) + 'h'
+  }, 1000)
+}
+
+// Heavier monitoring (asynchronous, runs independently)
+const startHeavyMonitor = async () => {
+  while (true) {
+    // Run GPU and Temp in parallel to save time
+    const [gpu, temp] = await Promise.all([getGpuUsage(), getSystemTemperature()])
+    currentSystemStats.gpu = gpu
+    currentSystemStats.temperature = temp
+    // Wait bit longer before polling heavy counters again to prevent CPU spikes
+    await new Promise(r => setTimeout(r, 2000))
+  }
+}
+
 export default function registerSystemHandlers(ipcMain: IpcMain) {
+  startCpuMonitor()
+  startHeavyMonitor()
 
   ipcMain.removeHandler('get-installed-apps')
   ipcMain.handle('get-installed-apps', async () => {
     try {
       if (os.platform() !== 'win32') return []
-
       const cmd = `powershell "Get-StartApps | Select-Object Name, AppID | ConvertTo-Json -Depth 1"`
-
       const jsonOutput = await runCommand(cmd)
-
       if (!jsonOutput) return []
-
-      let rawData
-      try {
-        rawData = JSON.parse(jsonOutput)
-      } catch (parseError) {
-        return []
-      }
-
+      let rawData = JSON.parse(jsonOutput)
       const appsArray = Array.isArray(rawData) ? rawData : [rawData]
-
       return appsArray
-        .filter((a: any) => a && a.Name && a.AppID) 
-        .map((a: any) => ({
-          name: a.Name.trim(),
-          id: a.AppID.trim()
-        }))
-        .sort((a, b) => a.name.localeCompare(b.name)) 
-    } catch (e) {
-      return []
-    }
+        .filter((a: any) => a && a.Name && a.AppID)
+        .map((a: any) => ({ name: a.Name.trim(), id: a.AppID.trim() }))
+        .sort((a,b) => a.name.localeCompare(b.name))
+    } catch { return [] }
   })
 
   ipcMain.removeHandler('get-system-stats')
   ipcMain.handle('get-system-stats', async () => {
-    const totalMem = os.totalmem()
-    const freeMem = os.freemem()
-    
-    // Fetch dynamic stats in parallel
-    const [temperature, gpu] = await Promise.all([
-      getSystemTemperature(),
-      getGpuUsage()
-    ])
-
+    // Instant return from cache - NO LATENCY
     return {
-      cpu: getSystemCpuUsage(),
-      gpu,
-      memory: {
-        total: (totalMem / 1024 ** 3).toFixed(1) + ' GB',
-        free: (freeMem / 1024 ** 3).toFixed(1) + ' GB',
-        usedPercentage: (((totalMem - freeMem) / totalMem) * 100).toFixed(1)
-      },
-      temperature,
+      cpu: currentSystemStats.cpu,
+      gpu: currentSystemStats.gpu,
+      memory: currentSystemStats.memory,
+      temperature: currentSystemStats.temperature,
       os: {
         type: 'Windows 11',
-        uptime: (os.uptime() / 3600).toFixed(1) + 'h'
+        uptime: currentSystemStats.uptime
       }
     }
   })
@@ -144,8 +154,6 @@ export default function registerSystemHandlers(ipcMain: IpcMain) {
       const cmd = `powershell "Get-PSDrive -PSProvider FileSystem | Select-Object Name, @{N='FreeGB';E={[math]::round($_.Free/1GB, 2)}}, @{N='TotalGB';E={[math]::round(($_.Used + $_.Free)/1GB, 2)}} | ConvertTo-Json"`
       const output = await runCommand(cmd)
       return output ? JSON.parse(output) : []
-    } catch (e) {
-      return []
-    }
+    } catch { return [] }
   })
 }

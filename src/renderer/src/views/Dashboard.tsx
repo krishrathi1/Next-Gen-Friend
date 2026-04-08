@@ -632,8 +632,10 @@ function DashboardView({
           </div>
           <div className="grid grid-cols-2 gap-3">
             {systemMetrics.map((m, i) => {
-              const fillClass = m.color.replace('text-', 'bg-')
-              const percent = m.percent !== null && Number.isFinite(m.percent) ? Math.max(0, Math.min(100, m.percent)) : 0
+              const percent = m.percent !== null && Number.isFinite(Number(m.percent)) ? Math.max(0, Math.min(100, Number(m.percent))) : 0
+              // Extract the color token (e.g., from text-blue-400 to blue-400)
+              const colorBase = m.color.split('-').slice(1).join('-')
+              
               return (
                 <div
                   key={i}
@@ -645,8 +647,14 @@ function DashboardView({
                   </div>
                   <div className="mt-2">
                     <span className={`text-[20px] font-black ${m.color} tracking-tight tabular-nums`}>{m.val}</span>
-                    <div className="w-full h-1 bg-black/40 rounded-full mt-2 overflow-hidden border border-white/[0.02]">
-                      <div className={`h-full rounded-full transition-all duration-1000 ease-out ${fillClass}`} style={{ width: `${percent}%` }} />
+                    <div className="w-full h-1.5 bg-black/40 rounded-full mt-2.5 overflow-hidden border border-white/[0.03]">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(255,255,255,0.1)] ${m.color}`} 
+                        style={{ 
+                          width: `${percent}%`,
+                          backgroundColor: 'currentColor'
+                        }} 
+                      />
                     </div>
                   </div>
                 </div>

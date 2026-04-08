@@ -104,7 +104,7 @@ const ELI = (props: EliProps) => {
       setDrives(Array.isArray(next) ? next : [])
     }
 
-    const statsTimer = setInterval(pollStats, 2000)
+    const statsTimer = setInterval(pollStats, 1000)
     const drivesTimer = setInterval(pollDrives, 15000)
 
     pollStats()
