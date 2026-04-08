@@ -96,7 +96,7 @@ const Sparkline = ({ data, colorClass, label }: { data: number[]; colorClass: st
       ? data
           .map((value, idx) => {
             const x = (idx / (data.length - 1)) * 100
-            const y = 100 - Math.max(0, Math.min(100, value))
+            const y = 40 - (Math.max(0, Math.min(100, value)) / 100) * 35 // Map 0-100 to 5-40 vertical range
             return `${x},${y}`
           })
           .join(' ')
@@ -108,7 +108,7 @@ const Sparkline = ({ data, colorClass, label }: { data: number[]; colorClass: st
   )
 
   return (
-    <div className="rounded-2xl border border-white/[0.04] bg-[#0c0c14]/40 p-4 group/spark transition-all duration-500 hover:bg-white/[0.03] relative overflow-hidden group-hover:shadow-[0_0_20px_rgba(139,92,246,0.05)]">
+    <div className="rounded-2xl border border-white/[0.04] bg-[#0c0c14]/40 px-1.5 py-4 group/spark transition-all duration-500 hover:bg-white/[0.03] relative overflow-hidden group-hover:shadow-[0_0_20px_rgba(139,92,246,0.05)]">
       <div className="absolute top-0 right-0 w-24 h-24 bg-current opacity-[0.02] blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 transition-opacity duration-700" />
       
       {/* Technical corner accents */}
@@ -124,15 +124,15 @@ const Sparkline = ({ data, colorClass, label }: { data: number[]; colorClass: st
           <div className={`h-0.5 w-6 rounded-full opacity-30 mt-0.5 ${colorClass.replace('text-', 'bg-')}`} />
         </div>
       </div>
-      <svg viewBox="0 0 100 100" className="h-14 w-full filter drop-shadow-[0_0_8px_rgba(124,58,237,0.2)]">
+      <svg viewBox="0 0 100 40" preserveAspectRatio="none" className="h-10 w-full filter drop-shadow-[0_0_8px_rgba(124,58,237,0.2)]">
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="currentColor" stopOpacity="0.4" />
             <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
           </linearGradient>
         </defs>
-        {points && <polygon points={`0,100 ${points} 100,100`} fill={`url(#${gradientId})`} className={colorClass} />}
-        <polyline points={points} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={colorClass} />
+        {points && <polygon points={`0,40 ${points} 100,40`} fill={`url(#${gradientId})`} className={colorClass} />}
+        <polyline points={points} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeJoin="round" className={colorClass} />
       </svg>
     </div>
   )

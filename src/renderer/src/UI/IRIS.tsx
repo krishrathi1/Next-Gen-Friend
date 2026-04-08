@@ -82,7 +82,7 @@ const ELI = (props: EliProps) => {
   const lastHistorySigRef = useRef('')
 
   useEffect(() => {
-    const appendPoint = (series: number[], value: number) => [...series.slice(-29), value]
+    const appendPoint = (series: number[], value: number) => [...series.slice(-44), value]
 
     const pollStats = async () => {
       const nextStats = await getSystemStatus()
