@@ -140,7 +140,7 @@ export default function DashboardView({ props, stats, chatHistory, onVisionClick
             ctx.fillText('SCANNING...', 12, 24)
           }
         } catch (e) {}
-      }, 250)
+      }, 450)
     } else {
       if (faceScanInterval.current) clearInterval(faceScanInterval.current)
       const ctx = canvasRef.current?.getContext('2d')

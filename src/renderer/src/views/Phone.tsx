@@ -27,6 +27,8 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
 
   const screenRef = useRef<HTMLImageElement>(null)
   const isStreaming = useRef(false)
+  const streamTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isScreenFetchInFlight = useRef(false)
   const knownNotifs = useRef<string[]>([])
   const hasAutoConnected = useRef(false)
 
@@ -103,6 +105,10 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
 
   const handleDisconnect = async () => {
     isStreaming.current = false
+    if (streamTimeoutRef.current) {
+      clearTimeout(streamTimeoutRef.current)
+      streamTimeoutRef.current = null
+    }
     try {
       await window.electron.ipcRenderer.invoke('adb-disconnect')
     } catch (e) {}
@@ -125,13 +131,21 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
 
   const startScreenStream = async () => {
     if (!isStreaming.current) return
+    if (isScreenFetchInFlight.current) {
+      streamTimeoutRef.current = setTimeout(startScreenStream, 300)
+      return
+    }
+    isScreenFetchInFlight.current = true
     try {
       const res = await window.electron.ipcRenderer.invoke('adb-screenshot')
       if (res.success && res.image && screenRef.current) {
         screenRef.current.src = res.image
       }
     } catch (e) {}
-    if (isStreaming.current) requestAnimationFrame(startScreenStream)
+    isScreenFetchInFlight.current = false
+    if (isStreaming.current) {
+      streamTimeoutRef.current = setTimeout(startScreenStream, 300)
+    }
   }
 
   useEffect(() => {
@@ -144,6 +158,16 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
     }
     return () => clearInterval(interval)
   }, [status])
+
+  useEffect(() => {
+    return () => {
+      isStreaming.current = false
+      if (streamTimeoutRef.current) {
+        clearTimeout(streamTimeoutRef.current)
+        streamTimeoutRef.current = null
+      }
+    }
+  }, [])
 
   /* ── DEVICE HISTORY VIEW ── */
   if (status !== 'connected' && uiMode === 'history') {

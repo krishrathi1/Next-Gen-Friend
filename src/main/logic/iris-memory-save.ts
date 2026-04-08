@@ -1,34 +1,61 @@
 import fs from 'fs'
+import fsPromises from 'fs/promises'
 import path from 'path'
 import { IpcMain, App } from 'electron'
 
 export default function registerIpcHandlers({ ipcMain, app }: { ipcMain: IpcMain; app: App }) {
   const CHAT_DIR = path.resolve(app.getPath('userData'), 'Chat')
   const FILE_PATH = path.join(CHAT_DIR, 'iris_memory.json')
+  type HistoryEntry = { role: string; content: string; timestamp: string }
+
+  let historyCache: HistoryEntry[] | null = null
+  let flushTimer: NodeJS.Timeout | null = null
+
+  const ensureLoaded = async () => {
+    if (historyCache) return
+    historyCache = []
+    try {
+      if (!fs.existsSync(CHAT_DIR)) {
+        await fsPromises.mkdir(CHAT_DIR, { recursive: true })
+      }
+      if (fs.existsSync(FILE_PATH)) {
+        const data = await fsPromises.readFile(FILE_PATH, 'utf-8')
+        const parsed = data ? JSON.parse(data) : []
+        historyCache = Array.isArray(parsed) ? parsed : []
+      }
+    } catch {
+      historyCache = []
+    }
+  }
+
+  const scheduleFlush = () => {
+    if (flushTimer) clearTimeout(flushTimer)
+    flushTimer = setTimeout(async () => {
+      try {
+        if (!historyCache) return
+        await fsPromises.writeFile(FILE_PATH, JSON.stringify(historyCache, null, 2))
+      } catch {}
+    }, 120)
+  }
 
   ipcMain.removeHandler('add-message')
   ipcMain.removeHandler('get-history')
 
   ipcMain.handle('add-message', async (_event, msg) => {
     try {
-      if (!fs.existsSync(CHAT_DIR)) fs.mkdirSync(CHAT_DIR, { recursive: true })
+      await ensureLoaded()
+      if (!historyCache) historyCache = []
 
-      let history: { role: string; content: string; timestamp: string }[] = []
-      if (fs.existsSync(FILE_PATH)) {
-        const data = fs.readFileSync(FILE_PATH, 'utf-8')
-        history = data ? JSON.parse(data) : []
-      }
-
-      const newEntry: { role: string; content: string; timestamp: string } = {
+      const newEntry: HistoryEntry = {
         role: msg.role,
         content: msg.parts[0].text,
         timestamp: new Date().toISOString()
       }
-      history.push(newEntry)
+      historyCache.push(newEntry)
 
-      if (history.length > 20) history = history.slice(-20)
+      if (historyCache.length > 20) historyCache = historyCache.slice(-20)
 
-      fs.writeFileSync(FILE_PATH, JSON.stringify(history, null, 2))
+      scheduleFlush()
       return true
     } catch (err) {
       return false
@@ -37,14 +64,11 @@ export default function registerIpcHandlers({ ipcMain, app }: { ipcMain: IpcMain
 
   ipcMain.handle('get-history', async () => {
     try {
-      if (fs.existsSync(FILE_PATH)) {
-        const data = fs.readFileSync(FILE_PATH, 'utf-8')
-        const raw = JSON.parse(data)
-        return raw.map((m: any) => ({
-          role: m.role === 'iris' ? 'model' : m.role,
-          parts: [{ text: m.content }]
-        }))
-      }
+      await ensureLoaded()
+      return (historyCache || []).map((m: any) => ({
+        role: m.role === 'iris' ? 'model' : m.role,
+        parts: [{ text: m.content }]
+      }))
     } catch (err) {}
     return []
   })

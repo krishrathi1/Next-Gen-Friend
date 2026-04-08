@@ -17,6 +17,11 @@ export interface AppItem {
   id: string
 }
 
+let appsCache: AppItem[] = []
+let appsCacheAt = 0
+let appsInFlight: Promise<AppItem[]> | null = null
+const APPS_CACHE_TTL_MS = 5 * 60 * 1000
+
 export const getSystemStatus = async (): Promise<SystemStats | null> => {
   try {
     return await window.electron.ipcRenderer.invoke('get-system-stats')
@@ -26,12 +31,26 @@ export const getSystemStatus = async (): Promise<SystemStats | null> => {
 }
 
 export const getAllApps = async (): Promise<AppItem[]> => {
-  try {
-    const apps = await window.electron.ipcRenderer.invoke('get-installed-apps')
-    return Array.isArray(apps) ? apps : []
-  } catch (error) {
-    return []
+  const now = Date.now()
+  if (appsCache.length > 0 && now - appsCacheAt < APPS_CACHE_TTL_MS) {
+    return appsCache
   }
+  if (appsInFlight) return appsInFlight
+
+  appsInFlight = window.electron.ipcRenderer
+    .invoke('get-installed-apps')
+    .then((apps: any) => (Array.isArray(apps) ? apps : []))
+    .catch(() => [])
+    .then((apps: AppItem[]) => {
+      appsCache = apps
+      appsCacheAt = Date.now()
+      return apps
+    })
+    .finally(() => {
+      appsInFlight = null
+    })
+
+  return appsInFlight
 }
 
 export const getDrives = async (): Promise<any[]> => {
