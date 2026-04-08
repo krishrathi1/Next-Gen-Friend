@@ -234,7 +234,7 @@ function Editor() {
   }
 
   return (
-    <div className="flex h-full w-full bg-[#07070c] relative overflow-hidden">
+    <div className="flex h-full w-full bg-[#07070c] relative overflow-auto scrollbar-small">
       
       {/* ── Sidebar ── */}
       <div

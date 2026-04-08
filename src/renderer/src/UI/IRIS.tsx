@@ -260,16 +260,34 @@ const ELI = (props: EliProps) => {
           />
         </div>
 
-        <div className={`absolute inset-0 ${activeTab === 'PHONE' ? 'block' : 'hidden'}`}>
-          <PhoneView glassPanel={glassPanel} />
+        <div className={`absolute inset-0 overflow-y-auto scrollbar-small ${activeTab === 'PHONE' ? 'block' : 'hidden'}`}>
+          <div className="h-full">
+            <PhoneView glassPanel={glassPanel} />
+          </div>
         </div>
 
         <Suspense fallback={<ViewSkeleton />}>
-          {activeTab === 'Macros' && <WorkFlowEditorView />}
-          {activeTab === 'NOTES' && <NotesView glassPanel={glassPanel} />}
+          {activeTab === 'Macros' && (
+            <div className="h-full overflow-y-auto scrollbar-small">
+              <WorkFlowEditorView />
+            </div>
+          )}
+          {activeTab === 'NOTES' && (
+            <div className="h-full overflow-y-auto scrollbar-small">
+              <NotesView glassPanel={glassPanel} />
+            </div>
+          )}
           {activeTab === 'APPS' && <AppsView />}
-          {activeTab === 'SETTINGS' && <SettingsView isSystemActive={props.isSystemActive} />}
-          {activeTab === 'GALLERY' && <GalleryView />}
+          {activeTab === 'SETTINGS' && (
+            <div className="h-full overflow-y-auto scrollbar-small">
+              <SettingsView isSystemActive={props.isSystemActive} />
+            </div>
+          )}
+          {activeTab === 'GALLERY' && (
+            <div className="h-full overflow-y-auto scrollbar-small">
+              <GalleryView />
+            </div>
+          )}
         </Suspense>
       </div>
 

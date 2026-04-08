@@ -172,7 +172,7 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
   /* ── DEVICE HISTORY VIEW ── */
   if (status !== 'connected' && uiMode === 'history') {
     return (
-      <div className="flex-1 flex flex-col items-center justify-start pt-12 p-8 bg-[#040407] min-h-screen text-zinc-100 overflow-y-auto scrollbar-small animate-in fade-in duration-300">
+      <div className="flex-1 h-full min-h-0 flex flex-col items-center justify-start pt-12 p-8 bg-[#040407] text-zinc-100 overflow-y-auto scrollbar-small animate-in fade-in duration-300">
         <div className="w-full max-w-5xl flex flex-col items-center">
           {/* Header */}
           <div className="flex flex-col items-center text-center mb-14">
@@ -242,7 +242,7 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
   /* ── MANUAL CONNECT VIEW ── */
   if (status !== 'connected' && uiMode === 'manual') {
     return (
-      <div className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-8 p-8 bg-[#040407] min-h-screen text-zinc-100 animate-in fade-in duration-300">
+      <div className="flex-1 h-full min-h-0 flex flex-col lg:flex-row items-center justify-center gap-8 p-8 bg-[#040407] text-zinc-100 overflow-y-auto scrollbar-small animate-in fade-in duration-300">
         <div className="w-full lg:w-80 flex flex-col gap-4">
           {/* Card Header */}
           <div className="p-5 bg-[#0d0d14] border border-white/[0.06] rounded-2xl flex items-center justify-between">
@@ -328,7 +328,7 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
 
   /* ── CONNECTED VIEW ── */
   return (
-    <div className="flex-1 flex flex-col lg:flex-row items-start justify-center gap-8 p-8 bg-[#040407] min-h-screen animate-in fade-in duration-300 overflow-y-auto scrollbar-small">
+    <div className="flex-1 h-full min-h-0 flex flex-col lg:flex-row items-start justify-center gap-8 p-8 bg-[#040407] animate-in fade-in duration-300 overflow-y-auto scrollbar-small">
       {/* Telemetry */}
       <div className="w-full lg:w-64 flex flex-col gap-4 shrink-0">
         <div className="flex items-center gap-3 mb-1">
