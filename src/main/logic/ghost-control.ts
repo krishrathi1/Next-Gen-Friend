@@ -142,6 +142,15 @@ export default function registerGhostControl(
           }
         } else if (action.type === 'click') {
           await mouse.leftClick()
+        } else if (action.type === 'focus-window') {
+          await new Promise<void>((resolve) => {
+            const title = (action.title || '').replace(/'/g, "\\'")
+            exec(
+              `powershell -Command "(New-Object -ComObject WScript.Shell).AppActivate('${title}')"`,
+              () => resolve()
+            )
+          })
+          await new Promise((r) => setTimeout(r, 700))
         }
       }
       return true

@@ -42,6 +42,17 @@ const resolveAppName = (rawAppName: string): string => {
   return aliases[normalized] || normalized
 }
 
+const APP_WINDOW_TITLES: Record<string, string> = {
+  whatsapp: 'WhatsApp',
+  telegram: 'Telegram',
+  discord: 'Discord',
+  slack: 'Slack',
+  teams: 'Microsoft Teams',
+  messenger: 'Messenger',
+  signal: 'Signal',
+  instagram: 'Instagram'
+}
+
 const runGhostSequenceOrThrow = async (actions: any[], label: string) => {
   const ok = await window.electron.ipcRenderer.invoke('ghost-sequence', actions)
   if (!ok) throw new Error(`UI automation failed at: ${label}`)
@@ -55,11 +66,10 @@ const openMessagingAppOrThrow = async (appName: string) => {
   }
 }
 
-const focusChatFromSearch = async (recipient: string) => {
+const focusChatFromSearch = async (recipient: string, windowTitle: string) => {
   await runGhostSequenceOrThrow(
     [
-      { type: 'wait', ms: 3500 },
-      { type: 'click' },
+      { type: 'focus-window', title: windowTitle },
       { type: 'press', key: 'f', modifiers: ['control'] },
       { type: 'wait', ms: 450 },
       { type: 'press', key: 'a', modifiers: ['control'] },
@@ -75,11 +85,10 @@ const focusChatFromSearch = async (recipient: string) => {
   )
 }
 
-const focusChatFromNewChat = async (recipient: string) => {
+const focusChatFromNewChat = async (recipient: string, windowTitle: string) => {
   await runGhostSequenceOrThrow(
     [
-      { type: 'wait', ms: 2500 },
-      { type: 'click' },
+      { type: 'focus-window', title: windowTitle },
       { type: 'press', key: 'n', modifiers: ['control'] },
       { type: 'wait', ms: 600 },
       { type: 'press', key: 'a', modifiers: ['control'] },
@@ -96,13 +105,14 @@ const focusChatFromNewChat = async (recipient: string) => {
 
 const focusConversationByApp = async (appName: string, recipient: string) => {
   const resolvedApp = resolveAppName(appName)
+  const windowTitle = APP_WINDOW_TITLES[resolvedApp] || resolvedApp
 
   if (resolvedApp === 'whatsapp') {
     try {
-      await focusChatFromSearch(recipient)
+      await focusChatFromSearch(recipient, windowTitle)
       return
     } catch {
-      await focusChatFromNewChat(recipient)
+      await focusChatFromNewChat(recipient, windowTitle)
       return
     }
   }
@@ -110,8 +120,7 @@ const focusConversationByApp = async (appName: string, recipient: string) => {
   if (resolvedApp === 'telegram' || resolvedApp === 'discord' || resolvedApp === 'slack') {
     await runGhostSequenceOrThrow(
       [
-        { type: 'wait', ms: 1700 },
-        { type: 'click' },
+        { type: 'focus-window', title: windowTitle },
         { type: 'press', key: 'k', modifiers: ['control'] },
         { type: 'wait', ms: 450 },
         { type: 'press', key: 'a', modifiers: ['control'] },
@@ -129,8 +138,7 @@ const focusConversationByApp = async (appName: string, recipient: string) => {
   if (resolvedApp === 'teams') {
     await runGhostSequenceOrThrow(
       [
-        { type: 'wait', ms: 1700 },
-        { type: 'click' },
+        { type: 'focus-window', title: windowTitle },
         { type: 'press', key: 'e', modifiers: ['control'] },
         { type: 'wait', ms: 450 },
         { type: 'press', key: 'a', modifiers: ['control'] },
@@ -146,13 +154,14 @@ const focusConversationByApp = async (appName: string, recipient: string) => {
   }
 }
 
-const sendMessagePayload = async (message: string, filePath?: string) => {
+const sendMessagePayload = async (message: string, windowTitle: string, filePath?: string) => {
   if (filePath) {
     const copied = await window.electron.ipcRenderer.invoke('copy-file-to-clipboard', filePath)
     if (!copied) throw new Error('Could not copy attachment to clipboard.')
 
     await runGhostSequenceOrThrow(
       [
+        { type: 'focus-window', title: windowTitle },
         { type: 'press', key: 'v', modifiers: ['control'] },
         { type: 'wait', ms: 2800 },
         { type: 'type', text: message },
@@ -165,8 +174,7 @@ const sendMessagePayload = async (message: string, filePath?: string) => {
 
   await runGhostSequenceOrThrow(
     [
-      { type: 'click' },
-      { type: 'wait', ms: 300 },
+      { type: 'focus-window', title: windowTitle },
       { type: 'paste', text: message },
       { type: 'wait', ms: 350 },
       { type: 'press', key: 'enter' }
@@ -208,9 +216,11 @@ export const sendMessageOnApp = async (
     const resolvedApp = resolveAppName(appName)
     const target = resolveRecipientForApp(resolvedApp, recipient)
 
+    const windowTitle = APP_WINDOW_TITLES[resolvedApp] || resolvedApp
+
     await openMessagingAppOrThrow(resolvedApp)
     await focusConversationByApp(resolvedApp, target)
-    await sendMessagePayload(message, filePath)
+    await sendMessagePayload(message, windowTitle, filePath)
 
     localStorage.setItem(
       LAST_MESSAGING_CONTEXT_KEY,
