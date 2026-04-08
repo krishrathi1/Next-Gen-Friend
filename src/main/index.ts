@@ -167,8 +167,8 @@ function toggleOverlayMode() {
     mainWindow.center()
     mainWindow.webContents.send('overlay-mode', false)
   } else {
-    const w = 340
-    const h = 70
+    const w = 360
+    const h = 74
     mainWindow.setBounds({
       width: w,
       height: h,
