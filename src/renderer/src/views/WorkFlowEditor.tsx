@@ -13,7 +13,22 @@ import 'react-tooltip/dist/react-tooltip.css'
 import ToolNode, { getIcon } from '../components/ToolNode'
 import ParameterEditorDrawer from '../components/ParameterEditorDrawer'
 import MacroManagementMenu from '../components/MacroManagementMenu'
-import { RiSave3Line, RiLayoutColumnLine, RiLayoutColumnFill, RiAddLine, RiPlayFill, RiCheckLine } from 'react-icons/ri'
+import {
+  RiSave3Line,
+  RiLayoutColumnLine,
+  RiLayoutColumnFill,
+  RiAddLine,
+  RiPlayFill,
+  RiCheckLine,
+  RiSearchLine,
+  RiArrowDownSLine,
+  RiArrowRightSLine,
+  RiBrainLine,
+  RiStopFill,
+  RiLoader4Line,
+  RiFileTextLine,
+  RiFlowChart
+} from 'react-icons/ri'
 
 import { getMacroSequence } from '@renderer/code/macro-executor'
 import {
@@ -62,6 +77,15 @@ const CATEGORIZED_TOOLS = {
   ]
 }
 
+const CATEGORY_COLORS: Record<string, string> = {
+  TRIGGERS: 'text-red-400 border-red-500/20',
+  SYSTEM: 'text-blue-400 border-blue-500/20',
+  AUTOMATION: 'text-yellow-400 border-yellow-500/20',
+  WEB_INTELLIGENCE: 'text-cyan-400 border-cyan-500/20',
+  COMMUNICATION: 'text-orange-400 border-orange-500/20',
+  MOBILE_LINK: 'text-indigo-400 border-indigo-500/20'
+}
+
 const ALL_TOOLS = Object.values(CATEGORIZED_TOOLS).flat()
 const nodeTypes = { customTool: ToolNode }
 
@@ -74,8 +98,21 @@ function Editor() {
   const [isSaved, setIsSaved] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [saveFlash, setSaveFlash] = useState(false)
+  const [sidebarSearch, setSidebarSearch] = useState('')
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set())
+  const [isRunning, setIsRunning] = useState(false)
+  const [runProgress, setRunProgress] = useState<{ current: number; total: number; step: string } | null>(null)
 
   const openParameterEditor = useCallback((nodeId: string) => setSelectedNodeId(nodeId), [])
+
+  const toggleCategory = (cat: string) => {
+    setCollapsedCategories(prev => {
+      const next = new Set(prev)
+      if (next.has(cat)) next.delete(cat)
+      else next.add(cat)
+      return next
+    })
+  }
 
   const loadMacroToCanvas = (macro: any) => {
     setWorkflowName(macro.name)
@@ -95,6 +132,7 @@ function Editor() {
     setNodes([])
     setEdges([])
     setIsSaved(false)
+    setRunProgress(null)
   }
 
   const updateNodeInputs = useCallback((nodeId: string, updatedInputs: any, updatedComment: string) => {
@@ -133,7 +171,7 @@ function Editor() {
       const toolName = event.dataTransfer.getData('application/reactflow')
       if (!toolName) return
       const toolSchema = ALL_TOOLS.find((t) => t.name === toolName)
-      const position = { x: event.clientX - (isSidebarOpen ? 280 : 50), y: event.clientY - 100 }
+      const position = { x: event.clientX - (isSidebarOpen ? 300 : 50), y: event.clientY - 100 }
       const newNode = {
         id: `${toolName}_${Date.now()}`,
         type: 'customTool',
@@ -168,17 +206,24 @@ function Editor() {
         setSaveFlash(true)
         setTimeout(() => setSaveFlash(false), 2000)
       }
-    } catch (err) {}
+    } catch (err) { }
   }
 
   const runMacroManually = async () => {
+    if (isRunning) return
+    setIsRunning(true)
     await saveWorkflow()
     const macroRes = await getMacroSequence(workflowName)
     if (!macroRes.success) {
+      setIsRunning(false)
+      setRunProgress(null)
       alert(`❌ Execution Failed: ${macroRes.error}`)
       return
     }
-    for (const step of macroRes.steps) {
+    const totalSteps = macroRes.steps.length
+    for (let i = 0; i < totalSteps; i++) {
+      const step = macroRes.steps[i]
+      setRunProgress({ current: i + 1, total: totalSteps, step: step.tool })
       try {
         if (step.tool === 'TRIGGER' || step.tool === 'TRIGGER_VOICE') {
         } else if (step.tool === 'WAIT') {
@@ -227,54 +272,101 @@ function Editor() {
           await takeScreenshot()
         }
       } catch (stepError) {
-        alert(`🔴 Macro Execution Halted! Failed at node: ${step.tool}`)
-        break
+        setIsRunning(false)
+        setRunProgress(null)
+        alert(`🔴 Macro Execution Halted! Failed at step ${i + 1}: ${step.tool}`)
+        return
       }
     }
+    setIsRunning(false)
+    setRunProgress({ current: totalSteps, total: totalSteps, step: 'COMPLETE' })
+    setTimeout(() => setRunProgress(null), 3000)
   }
 
+  // Filter tools by sidebar search
+  const filteredTools = Object.entries(CATEGORIZED_TOOLS).map(([category, tools]) => ({
+    category,
+    tools: sidebarSearch
+      ? tools.filter(t => t.name.toLowerCase().includes(sidebarSearch.toLowerCase()) || t.description.toLowerCase().includes(sidebarSearch.toLowerCase()))
+      : tools
+  })).filter(g => g.tools.length > 0)
+
   return (
-    <div className="flex h-full w-full bg-[#07070c] relative overflow-auto scrollbar-small">
-      
+    <div className="flex h-full w-full bg-[#040407] relative overflow-hidden">
+
       {/* ── Sidebar ── */}
       <div
-        className={`fixed top-[52px] left-0 h-[calc(100vh-52px)] bg-[#0d0d14] border-r border-white/[0.05] flex flex-col gap-0 transition-all duration-300 ease-in-out z-40 mt-5 ${isSidebarOpen ? 'w-[268px] opacity-100' : 'w-0 opacity-0'}`}
+        className={`fixed top-[52px] left-0 h-[calc(100vh-52px)] bg-[#08080e]/95 backdrop-blur-xl border-r border-white/[0.06] flex flex-col transition-all duration-300 ease-in-out z-40 ${isSidebarOpen ? 'w-[290px] opacity-100' : 'w-0 opacity-0'}`}
       >
         {isSidebarOpen && (
-          <div className="flex flex-col h-full overflow-auto scrollbar-small">
+          <div className="flex flex-col h-full">
             {/* Sidebar Header */}
             <div className="px-4 py-4 border-b border-white/[0.05] shrink-0">
-              <h2 className="text-[10px] font-bold tracking-[0.2em] text-violet-400/70 uppercase">
-                Module Library
-              </h2>
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="w-6 h-6 rounded-lg bg-violet-600/15 border border-violet-500/25 flex items-center justify-center">
+                  <RiFlowChart size={12} className="text-violet-400" />
+                </div>
+                <h2 className="text-[10px] font-black tracking-[0.25em] text-violet-400/80 uppercase">
+                  Module Library
+                </h2>
+              </div>
+              {/* Search */}
+              <div className="relative">
+                <RiSearchLine className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-600" size={13} />
+                <input
+                  type="text"
+                  placeholder="Search modules..."
+                  value={sidebarSearch}
+                  onChange={e => setSidebarSearch(e.target.value)}
+                  className="w-full bg-white/[0.02] border border-white/[0.06] rounded-lg text-[11px] py-2 pl-8 pr-3 text-zinc-300 outline-none focus:border-violet-500/30 transition-colors placeholder:text-zinc-700 font-medium"
+                />
+              </div>
             </div>
 
             {/* Tool Categories */}
-            <div className="p-3 flex flex-col gap-4 flex-1">
-              {Object.entries(CATEGORIZED_TOOLS).map(([category, tools]) => (
-                <div key={category}>
-                  <h3 className="text-[9px] font-bold tracking-widest text-zinc-600 uppercase mb-2 px-1.5">
-                    {category.replace(/_/g, ' ')}
-                  </h3>
-                  <div className="flex flex-col gap-1">
-                    {tools.map((tool: any) => (
-                      <div
-                        key={tool.name}
-                        className="flex items-center gap-2.5 p-2.5 bg-white/[0.01] border border-white/[0.04] rounded-xl cursor-grab hover:border-violet-500/30 hover:bg-violet-500/[0.04] hover:border-l-[3px] hover:border-l-violet-500/50 transition-all duration-150 group"
-                        draggable
-                        onDragStart={(e) => e.dataTransfer.setData('application/reactflow', tool.name)}
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-black/60 flex items-center justify-center border border-white/[0.05] shrink-0">
-                          {getIcon(tool.name, 13)}
-                        </div>
-                        <span className="text-[10px] font-semibold text-zinc-500 group-hover:text-zinc-200 tracking-wide transition-colors uppercase truncate">
-                          {tool.name.replace(/_/g, ' ')}
-                        </span>
+            <div className="p-3 flex flex-col gap-1 flex-1 overflow-y-auto scrollbar-none">
+              {filteredTools.map(({ category, tools }) => {
+                const colorClass = CATEGORY_COLORS[category] || 'text-zinc-400 border-zinc-500/20'
+                const isCollapsed = collapsedCategories.has(category)
+                return (
+                  <div key={category} className="mb-1">
+                    <button
+                      onClick={() => toggleCategory(category)}
+                      className="w-full flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-white/[0.03] transition-colors cursor-pointer group"
+                    >
+                      {isCollapsed
+                        ? <RiArrowRightSLine size={14} className="text-zinc-600 group-hover:text-zinc-400" />
+                        : <RiArrowDownSLine size={14} className="text-zinc-600 group-hover:text-zinc-400" />
+                      }
+                      <span className={`text-[9px] font-black tracking-[0.2em] uppercase ${colorClass.split(' ')[0]}`}>
+                        {category.replace(/_/g, ' ')}
+                      </span>
+                      <span className="text-[9px] text-zinc-700 ml-auto font-mono">{tools.length}</span>
+                    </button>
+                    {!isCollapsed && (
+                      <div className="flex flex-col gap-0.5 ml-2 mt-0.5">
+                        {tools.map((tool: any) => (
+                          <div
+                            key={tool.name}
+                            className="flex items-center gap-2.5 p-2 bg-white/[0.01] border border-transparent rounded-lg cursor-grab hover:border-violet-500/20 hover:bg-violet-500/[0.03] transition-all duration-150 group/tool"
+                            draggable
+                            onDragStart={(e) => e.dataTransfer.setData('application/reactflow', tool.name)}
+                            data-tooltip-id="sidebar-tooltip"
+                            data-tooltip-content={tool.description}
+                          >
+                            <div className="w-6 h-6 rounded-md bg-black/40 flex items-center justify-center border border-white/[0.04] shrink-0">
+                              {getIcon(tool.name, 12)}
+                            </div>
+                            <span className="text-[10px] font-semibold text-zinc-500 group-hover/tool:text-zinc-200 tracking-wide transition-colors uppercase truncate">
+                              {tool.name.replace(/_/g, ' ')}
+                            </span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )}
@@ -283,63 +375,128 @@ function Editor() {
       {/* Sidebar Toggle */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className={`absolute top-1/2 -translate-y-1/2 z-50 bg-[#0d0d14] border border-white/[0.06] border-l-0 p-2 rounded-r-xl text-zinc-600 hover:text-violet-400 transition-all duration-150 hover:bg-violet-500/[0.06] ${isSidebarOpen ? 'left-[268px]' : 'left-0'}`}
+        className={`absolute top-1/2 -translate-y-1/2 z-50 bg-[#0d0d14]/90 backdrop-blur-md border border-white/[0.06] border-l-0 p-2 rounded-r-xl text-zinc-600 hover:text-violet-400 transition-all duration-150 hover:bg-violet-500/[0.06] ${isSidebarOpen ? 'left-[290px]' : 'left-0'}`}
       >
         {isSidebarOpen ? <RiLayoutColumnLine size={16} /> : <RiLayoutColumnFill size={16} />}
       </button>
 
       {/* ── Canvas Area ── */}
       <div
-        className={`grow flex flex-col relative transition-all duration-300 ease-in-out ${isSidebarOpen ? 'ml-[268px]' : 'ml-0'}`}
+        className={`grow flex flex-col relative transition-all duration-300 ease-in-out ${isSidebarOpen ? 'ml-[290px]' : 'ml-0'}`}
         onDrop={onDrop}
         onDragOver={onDragOver}
       >
-        {/* Toolbar */}
-        <div className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-[#0d0d14]/90 backdrop-blur-xl border border-white/[0.06] rounded-xl px-3 py-2 shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
-          <button
-            onClick={resetCanvas}
-            className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/[0.03] border border-white/[0.06] text-zinc-600 hover:text-zinc-200 hover:bg-white/[0.08] hover:border-white/[0.12] transition-all duration-150 cursor-pointer"
-            data-tooltip-id="global-tooltip"
-            data-tooltip-content="New Macro"
-          >
-            <RiAddLine size={15} />
-          </button>
+        {/* Top Toolbar */}
+        <div className="absolute top-4 left-4 right-4 z-10 flex items-center justify-between">
+          <div className="flex items-center gap-2 bg-[#0a0a12]/90 backdrop-blur-xl border border-white/[0.06] rounded-xl px-3 py-2 shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
+            <button
+              onClick={resetCanvas}
+              className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/[0.03] border border-white/[0.06] text-zinc-600 hover:text-zinc-200 hover:bg-white/[0.08] hover:border-white/[0.12] transition-all duration-150 cursor-pointer"
+              data-tooltip-id="global-tooltip"
+              data-tooltip-content="New Macro"
+            >
+              <RiAddLine size={15} />
+            </button>
 
-          <div className="w-px h-5 bg-white/[0.06]" />
+            <div className="w-px h-6 bg-white/[0.06]" />
 
-          <MacroManagementMenu loadMacroToCanvas={loadMacroToCanvas} />
+            <MacroManagementMenu loadMacroToCanvas={loadMacroToCanvas} />
 
-          <div className="w-px h-5 bg-white/[0.06]" />
+            <div className="w-px h-6 bg-white/[0.06]" />
 
-          <input
-            type="text"
-            value={workflowName}
-            onChange={(e) => setWorkflowName(e.target.value)}
-            className="bg-transparent border-none outline-none text-[12px] text-zinc-200 font-semibold w-52 placeholder:text-zinc-700"
-            placeholder="Macro name..."
-          />
+            {/* Name + Description */}
+            <div className="flex flex-col gap-0.5">
+              <input
+                type="text"
+                value={workflowName}
+                onChange={(e) => setWorkflowName(e.target.value)}
+                className="bg-transparent border-none outline-none text-[12px] text-zinc-200 font-bold w-48 placeholder:text-zinc-700 tracking-wide"
+                placeholder="Macro name..."
+              />
+              <input
+                type="text"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="bg-transparent border-none outline-none text-[9px] text-zinc-600 font-mono w-48 placeholder:text-zinc-800 tracking-wider"
+                placeholder="Description..."
+              />
+            </div>
 
-          <div className="w-px h-5 bg-white/[0.06]" />
+            <div className="w-px h-6 bg-white/[0.06]" />
 
-          <button
-            onClick={runMacroManually}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-violet-400 hover:bg-violet-600/15 hover:border-violet-500/30 text-[11px] font-semibold tracking-wide transition-all duration-150 cursor-pointer"
-          >
-            <RiPlayFill size={13} /> RUN
-          </button>
+            {/* Run Button */}
+            <button
+              onClick={runMacroManually}
+              disabled={isRunning || nodes.length === 0}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[11px] font-bold tracking-wider transition-all duration-200 cursor-pointer border ${isRunning
+                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                  : nodes.length === 0
+                    ? 'bg-white/[0.02] border-white/[0.04] text-zinc-700 cursor-not-allowed'
+                    : 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400 hover:bg-emerald-500/20 hover:border-emerald-500/40'
+                }`}
+            >
+              {isRunning
+                ? <><RiLoader4Line size={13} className="animate-spin" /> RUNNING</>
+                : <><RiPlayFill size={13} /> RUN</>
+              }
+            </button>
 
-          <button
-            onClick={saveWorkflow}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[11px] font-semibold tracking-wide transition-all duration-200 cursor-pointer border ${
-              saveFlash
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                : 'bg-violet-600/15 border-violet-500/25 text-violet-300 hover:bg-violet-600/25 hover:border-violet-500/40'
-            }`}
-          >
-            {saveFlash ? <RiCheckLine size={13} /> : <RiSave3Line size={13} />}
-            {saveFlash ? 'Saved' : 'Save'}
-          </button>
+            {/* Save Button */}
+            <button
+              onClick={saveWorkflow}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-[11px] font-bold tracking-wider transition-all duration-200 cursor-pointer border ${saveFlash
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                  : 'bg-violet-600/15 border-violet-500/25 text-violet-300 hover:bg-violet-600/25 hover:border-violet-500/40'
+                }`}
+            >
+              {saveFlash ? <RiCheckLine size={13} /> : <RiSave3Line size={13} />}
+              {saveFlash ? 'Saved' : 'Save'}
+            </button>
+          </div>
+
+          {/* Right side stats */}
+          <div className="flex items-center gap-2">
+            {/* Execution Progress */}
+            {runProgress && (
+              <div className="flex items-center gap-2 bg-[#0a0a12]/90 backdrop-blur-xl border border-violet-500/20 rounded-xl px-3 py-2 shadow-[0_0_20px_rgba(124,58,237,0.1)]">
+                <div className="w-20 h-1.5 bg-black/40 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${runProgress.step === 'COMPLETE' ? 'bg-emerald-400' : 'bg-violet-500'}`}
+                    style={{ width: `${(runProgress.current / runProgress.total) * 100}%` }}
+                  />
+                </div>
+                <span className="text-[9px] font-mono text-zinc-500 tracking-wider">
+                  {runProgress.step === 'COMPLETE' ? '✓ DONE' : `${runProgress.current}/${runProgress.total}`}
+                </span>
+              </div>
+            )}
+            {/* Node Count */}
+            <div className="flex items-center gap-2 bg-[#0a0a12]/90 backdrop-blur-xl border border-white/[0.06] rounded-xl px-3 py-2">
+              <RiBrainLine size={13} className="text-violet-500" />
+              <span className="text-[10px] font-mono text-zinc-500 tracking-wider">{nodes.length} nodes</span>
+              <span className="text-[10px] text-zinc-700">|</span>
+              <span className="text-[10px] font-mono text-zinc-500 tracking-wider">{edges.length} links</span>
+            </div>
+          </div>
         </div>
+
+        {/* Empty State */}
+        {nodes.length === 0 && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-[5]">
+            <div className="relative mb-6">
+              <div className="w-20 h-20 rounded-2xl bg-violet-500/5 border border-violet-500/10 flex items-center justify-center">
+                <RiFlowChart size={32} className="text-violet-500/30" />
+              </div>
+              <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-violet-500/30 animate-ping" />
+            </div>
+            <h3 className="text-[13px] font-black tracking-[0.3em] text-zinc-600 uppercase mb-2">
+              Empty Canvas
+            </h3>
+            <p className="text-[10px] text-zinc-700 font-mono tracking-wider max-w-xs text-center leading-relaxed">
+              Drag modules from the sidebar to build your automation workflow. Connect them to define execution order.
+            </p>
+          </div>
+        )}
 
         {/* ReactFlow Canvas */}
         <ReactFlow
@@ -349,9 +506,9 @@ function Editor() {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           nodeTypes={nodeTypes}
-          className="bg-[#07070c]"
+          className="bg-[#040407]"
         >
-          <Background color="rgba(255,255,255,0.03)" gap={24} size={1} />
+          <Background color="rgba(124,58,237,0.03)" gap={28} size={1} />
           <Controls className="react-flow__controls" />
         </ReactFlow>
 
@@ -365,6 +522,19 @@ function Editor() {
             borderRadius: '10px',
             fontSize: '11px',
             color: '#a1a1aa',
+            zIndex: 100
+          }}
+        />
+        <Tooltip
+          id="sidebar-tooltip"
+          place="right"
+          style={{
+            maxWidth: '200px',
+            backgroundColor: '#0d0d14',
+            border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: '10px',
+            fontSize: '10px',
+            color: '#71717a',
             zIndex: 100
           }}
         />
