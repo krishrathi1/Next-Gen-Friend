@@ -384,8 +384,8 @@ function DashboardView({
   )
 
   return (
-    <div className="flex-1 p-3 grid grid-cols-12 gap-3 h-full overflow-hidden overflow-x-hidden relative animate-in fade-in zoom-in duration-300 w-full">
-      <div className="hidden lg:flex col-span-3 flex-col gap-3 h-full z-40 overflow-y-auto overflow-x-hidden scrollbar-none pb-20 pr-1.5">
+    <div className="flex-1 p-2 grid grid-cols-12 gap-2 h-full overflow-hidden overflow-x-hidden relative animate-in fade-in zoom-in duration-300 w-full">
+      <div className="hidden lg:flex col-span-3 flex-col gap-2 h-full z-40 overflow-y-auto overflow-x-hidden scrollbar-none pb-8 pr-1">
         <div className={`${glassPanel} h-[260px] shrink-0 flex flex-col overflow-hidden relative group border-violet-500/10 hover:border-violet-500/40 p-1 bg-black/40`}>
           <div className="absolute top-4 left-4 z-40 flex items-center gap-2.5 bg-black/60 backdrop-blur-xl rounded-full px-3 py-1.5 border border-white/10">
             <div className="relative flex items-center justify-center">
