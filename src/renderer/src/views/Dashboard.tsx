@@ -9,14 +9,10 @@ import {
   RiMicOffLine,
   RiPhoneFill,
   RiPulseLine,
-  RiServerLine,
   RiSwapBoxLine,
   RiTerminalBoxLine,
   RiWifiLine,
-  RiHardDrive2Line,
-  RiCloudLine,
-  RiArrowDownCircleLine,
-  RiArrowUpCircleLine
+  RiHardDrive2Line
 } from 'react-icons/ri'
 import { FaMemory } from 'react-icons/fa6'
 import { GiTinker } from 'react-icons/gi'
@@ -69,6 +65,24 @@ type MetricCard = {
 
 const glassPanel =
   'bg-white/[0.02] backdrop-blur-3xl border border-white/[0.08] rounded-2xl shadow-xl transition-all duration-500'
+
+let faceModelsReady = false
+let faceModelsPromise: Promise<void> | null = null
+
+const ensureFaceModelsLoaded = async () => {
+  if (faceModelsReady) return
+  if (!faceModelsPromise) {
+    const MODEL_URL = '/models'
+    faceModelsPromise = Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+      faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
+      faceapi.nets.ageGenderNet.loadFromUri(MODEL_URL)
+    ]).then(() => {
+      faceModelsReady = true
+    })
+  }
+  await faceModelsPromise
+}
 
 const getMessageText = (msg: TranscriptMessage): string => {
   if (typeof msg.content === 'string' && msg.content.trim()) return msg.content
@@ -193,6 +207,7 @@ function DashboardView({
   const videoElementRef = useRef<HTMLVideoElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const faceScanInterval = useRef<NodeJS.Timeout | null>(null)
+  const faceScanBusyRef = useRef(false)
 
   const [modelsLoaded, setModelsLoaded] = useState(false)
   const [modelLoadError, setModelLoadError] = useState<string | null>(null)
@@ -210,12 +225,7 @@ function DashboardView({
   useEffect(() => {
     const loadModels = async () => {
       try {
-        const MODEL_URL = '/models'
-        await Promise.all([
-          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-          faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
-          faceapi.nets.ageGenderNet.loadFromUri(MODEL_URL)
-        ])
+        await ensureFaceModelsLoaded()
         setModelsLoaded(true)
         setModelLoadError(null)
       } catch {
@@ -229,10 +239,13 @@ function DashboardView({
     if (isVideoOn && visionMode === 'camera' && modelsLoaded && videoElementRef.current && canvasRef.current) {
       if (faceScanInterval.current) clearInterval(faceScanInterval.current)
       faceScanInterval.current = setInterval(async () => {
+        if (faceScanBusyRef.current) return
+
         const video = videoElementRef.current
         const canvas = canvasRef.current
         if (!video || !canvas || video.readyState !== 4 || video.videoWidth === 0) return
 
+        faceScanBusyRef.current = true
         try {
           const vw = video.videoWidth
           const vh = video.videoHeight
@@ -271,10 +284,13 @@ function DashboardView({
           }
         } catch {
           // Keep feed resilient if a single frame fails.
+        } finally {
+          faceScanBusyRef.current = false
         }
       }, 450)
     } else {
       if (faceScanInterval.current) clearInterval(faceScanInterval.current)
+      faceScanBusyRef.current = false
       const ctx = canvasRef.current?.getContext('2d')
       if (ctx && canvasRef.current) {
         ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)

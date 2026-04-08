@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { memo, useState, useEffect, useRef } from 'react'
 import { FaAndroid } from 'react-icons/fa6'
 import {
   RiLinkM,
@@ -37,6 +37,7 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
 
   const screenRef = useRef<HTMLImageElement>(null)
   const isStreaming = useRef(false)
+  const isScreenPausedRef = useRef(false)
   const streamTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isScreenFetchInFlight = useRef(false)
   const knownNotifs = useRef<string[]>([])
@@ -49,6 +50,10 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
     battery: { level: 0, isCharging: false, temp: '0.0' },
     storage: { used: '0 GB', total: '0 GB TOTAL', percent: 0 }
   })
+
+  useEffect(() => {
+    isScreenPausedRef.current = isScreenPaused
+  }, [isScreenPaused])
 
   useEffect(() => {
     window.electron.ipcRenderer.invoke('adb-get-history').then((data) => {
@@ -149,10 +154,10 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
   }
 
   const startScreenStream = async () => {
-    if (isScreenPaused) return
+    if (isScreenPausedRef.current) return
     if (!isStreaming.current) return
     if (isScreenFetchInFlight.current) {
-      streamTimeoutRef.current = setTimeout(startScreenStream, 300)
+      streamTimeoutRef.current = setTimeout(startScreenStream, 450)
       return
     }
     isScreenFetchInFlight.current = true
@@ -163,8 +168,8 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
       }
     } catch (e) {}
     isScreenFetchInFlight.current = false
-    if (isStreaming.current) {
-      streamTimeoutRef.current = setTimeout(startScreenStream, 300)
+    if (isStreaming.current && !isScreenPausedRef.current) {
+      streamTimeoutRef.current = setTimeout(startScreenStream, 450)
     }
   }
 
@@ -205,6 +210,7 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
   const toggleScreenStream = async () => {
     const next = !isScreenPaused
     setIsScreenPaused(next)
+    isScreenPausedRef.current = next
     if (!next) {
       await startScreenStream()
       setUiMessage('Live screen resumed.')
@@ -611,4 +617,4 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
   )
 }
 
-export default PhoneView
+export default memo(PhoneView)

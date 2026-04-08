@@ -5,6 +5,7 @@ import { irisService } from '@renderer/services/Iris-voice-ai'
 
 const CustomParticleSphere = ({ count = 3000 }) => {
   const mesh = useRef<THREE.Points>(null)
+  const particleTickRef = useRef(0)
 
   const dataArray = useMemo(() => new Uint8Array(128), [])
   const colorA = useMemo(() => new THREE.Color('#33db12'), [])
@@ -52,6 +53,10 @@ const CustomParticleSphere = ({ count = 3000 }) => {
 
     tempColor.copy(colorA).lerp(colorB, volume)
     ;(mesh.current.material as THREE.PointsMaterial).color.copy(tempColor)
+
+    particleTickRef.current += delta
+    if (particleTickRef.current < 1 / 30) return
+    particleTickRef.current = 0
 
     const currentPos = mesh.current.geometry.attributes.position.array as Float32Array
 

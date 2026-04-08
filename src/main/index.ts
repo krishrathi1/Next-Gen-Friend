@@ -52,6 +52,10 @@ import registerSecurityVault from './security/Security'
 import registerLockSystem from './security/lock-system'
 
 app.commandLine.appendSwitch('use-fake-ui-for-media-stream')
+app.commandLine.appendSwitch(
+  'disable-features',
+  'AutofillServerCommunication,AutofillAddressProfileSavePrompt'
+)
 
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
@@ -116,6 +120,17 @@ function createWindow(): void {
 
   mainWindow.on('ready-to-show', () => {
     if (mainWindow) mainWindow.show()
+  })
+
+  mainWindow.webContents.on('console-message', (event, _level, message, _line, sourceId) => {
+    const isDevToolsAutofillNoise =
+      sourceId.startsWith('devtools://') &&
+      (message.includes("'Autofill.enable' wasn't found") ||
+        message.includes("'Autofill.setAddresses' wasn't found"))
+
+    if (isDevToolsAutofillNoise) {
+      event.preventDefault()
+    }
   })
 
   mainWindow.webContents.on('did-finish-load', () => {

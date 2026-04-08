@@ -81,7 +81,11 @@ const ELI = (props: EliProps) => {
   const [showSourceModal, setShowSourceModal] = useState(false)
   const lastHistorySigRef = useRef('')
 
+  const isDashboardActive = activeTab === 'DASHBOARD'
+
   useEffect(() => {
+    if (!isDashboardActive) return
+
     const appendPoint = (series: number[], value: number) => [...series.slice(-44), value]
 
     const pollStats = async () => {
@@ -114,7 +118,7 @@ const ELI = (props: EliProps) => {
       clearInterval(statsTimer)
       clearInterval(drivesTimer)
     }
-  }, [])
+  }, [isDashboardActive])
 
   useEffect(() => {
     let cleanup: (() => void) | undefined
@@ -151,6 +155,8 @@ const ELI = (props: EliProps) => {
   }, [])
 
   useEffect(() => {
+    if (!isDashboardActive) return
+
     const fetchHistory = async () => {
       const history = await getHistory()
       if (!Array.isArray(history)) return
@@ -168,7 +174,7 @@ const ELI = (props: EliProps) => {
     fetchHistory()
     const interval = setInterval(fetchHistory, 1200)
     return () => clearInterval(interval)
-  }, [])
+  }, [isDashboardActive])
 
   const handleVisionClick = () => {
     if (props.isVideoOn) {
@@ -246,7 +252,8 @@ const ELI = (props: EliProps) => {
           }}
         />
 
-        <div className={`absolute inset-0 ${activeTab === 'DASHBOARD' ? 'block' : 'hidden'}`}>
+        {activeTab === 'DASHBOARD' && (
+          <div className="absolute inset-0">
           <DashboardView
             props={props}
             stats={stats}
@@ -261,13 +268,16 @@ const ELI = (props: EliProps) => {
             isTyping={isTyping}
             onVisionClick={handleVisionClick}
           />
-        </div>
-
-        <div className={`absolute inset-0 overflow-y-auto scrollbar-small ${activeTab === 'PHONE' ? 'block' : 'hidden'}`}>
-          <div className="h-full">
-            <PhoneView glassPanel={glassPanel} />
           </div>
-        </div>
+        )}
+
+        {activeTab === 'PHONE' && (
+          <div className="absolute inset-0 overflow-y-auto scrollbar-small">
+            <div className="h-full">
+              <PhoneView glassPanel={glassPanel} />
+            </div>
+          </div>
+        )}
 
         <Suspense fallback={<ViewSkeleton />}>
           {activeTab === 'Macros' && (
