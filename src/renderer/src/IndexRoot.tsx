@@ -52,6 +52,23 @@ const IndexRoot = () => {
     return () => clearInterval(watchdog)
   }, [isSystemActive])
 
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.code !== 'Space') return
+      const target = event.target as HTMLElement | null
+      const isTyping =
+        !!target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.getAttribute('contenteditable') === 'true')
+      if (isTyping) return
+      event.preventDefault()
+      toggleMic()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [isMicMuted])
+
   const toggleSystem = async () => {
     if (!isSystemActive) {
       try {

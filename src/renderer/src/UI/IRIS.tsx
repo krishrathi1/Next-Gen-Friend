@@ -14,7 +14,7 @@ import {
   RiImageLine,
   RiAppsLine
 } from 'react-icons/ri'
-import { getSystemStatus, SystemStats } from '@renderer/services/system-info'
+import { getDrives, DriveInfo, getSystemStatus, SystemStats } from '@renderer/services/system-info'
 import { getHistory } from '@renderer/services/iris-ai-brain'
 import ViewSkeleton from '@renderer/components/ViewSkelrton'
 
@@ -70,21 +70,47 @@ const ClockDisplay = memo(() => {
 const ELI = (props: EliProps) => {
   const [activeTab, setActiveTab] = useState('DASHBOARD')
   const [stats, setStats] = useState<SystemStats | null>(null)
-  const [batteryLevel, setBatteryLevel] = useState<number>(100)
+  const [batteryLevel, setBatteryLevel] = useState<number | null>(null)
   const [networkRttMs, setNetworkRttMs] = useState<number | null>(null)
+  const [networkDownlinkMbps, setNetworkDownlinkMbps] = useState<number | null>(null)
+  const [networkType, setNetworkType] = useState<string>('unknown')
+  const [drives, setDrives] = useState<DriveInfo[]>([])
+  const [metricHistory, setMetricHistory] = useState<{ cpu: number[]; ram: number[] }>({
+    cpu: [],
+    ram: []
+  })
   const [chatHistory, setChatHistory] = useState<any[]>([])
   const [showSourceModal, setShowSourceModal] = useState(false)
   const lastHistorySigRef = useRef('')
 
   useEffect(() => {
-    const statsTimer = setInterval(() => {
-      getSystemStatus().then(setStats)
-    }, 2000)
+    const appendPoint = (series: number[], value: number) => [...series.slice(-29), value]
+    const pollStats = async () => {
+      const nextStats = await getSystemStatus()
+      setStats(nextStats)
+      if (nextStats) {
+        const cpu = Number(nextStats.cpu)
+        const ram = Number(nextStats.memory.usedPercentage)
+        setMetricHistory((prev) => ({
+          cpu: Number.isFinite(cpu) ? appendPoint(prev.cpu, cpu) : prev.cpu,
+          ram: Number.isFinite(ram) ? appendPoint(prev.ram, ram) : prev.ram
+        }))
+      }
+    }
+    const pollDrives = async () => {
+      const next = await getDrives()
+      setDrives(Array.isArray(next) ? next : [])
+    }
 
-    getSystemStatus().then(setStats)
+    const statsTimer = setInterval(pollStats, 2000)
+    const drivesTimer = setInterval(pollDrives, 15000)
+
+    pollStats()
+    pollDrives()
 
     return () => {
       clearInterval(statsTimer)
+      clearInterval(drivesTimer)
     }
   }, [])
 
@@ -98,7 +124,7 @@ const ELI = (props: EliProps) => {
         battery.addEventListener?.('levelchange', syncBattery)
         cleanup = () => battery.removeEventListener?.('levelchange', syncBattery)
       })
-      .catch(() => {})
+      .catch(() => setBatteryLevel(null))
 
     return () => {
       if (cleanup) cleanup()
@@ -112,6 +138,9 @@ const ELI = (props: EliProps) => {
     const syncRtt = () => {
       const rtt = Number(conn.rtt)
       setNetworkRttMs(Number.isFinite(rtt) && rtt > 0 ? rtt : null)
+      const downlink = Number(conn.downlink)
+      setNetworkDownlinkMbps(Number.isFinite(downlink) && downlink > 0 ? downlink : null)
+      setNetworkType(conn.effectiveType || 'unknown')
     }
 
     syncRtt()
@@ -196,11 +225,13 @@ const ELI = (props: EliProps) => {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 text-[10px] font-mono text-violet-400/60">
             <RiWifiLine size={12} />
-            <span className="hidden sm:block tracking-wide">LINKED</span>
+            <span className="hidden sm:block tracking-wide">
+              {props.isSystemActive ? 'LINKED' : 'IDLE'}
+            </span>
           </div>
           <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-mono text-zinc-600">
             <RiBatteryChargeLine size={12} />
-            <span>{batteryLevel}%</span>
+            <span>{batteryLevel === null ? '--' : `${batteryLevel}%`}</span>
           </div>
           <div className="bg-white/[0.04] border border-white/[0.06] px-2.5 py-1 rounded-md">
             <ClockDisplay />
@@ -215,6 +246,11 @@ const ELI = (props: EliProps) => {
             props={props}
             stats={stats}
             networkRttMs={networkRttMs}
+            networkDownlinkMbps={networkDownlinkMbps}
+            networkType={networkType}
+            drives={drives}
+            cpuHistory={metricHistory.cpu}
+            ramHistory={metricHistory.ram}
             chatHistory={chatHistory}
             onVisionClick={handleVisionClick}
           />

@@ -1,25 +1,25 @@
-﻿import { memo, useEffect, useCallback, useRef, useState } from 'react'
+﻿import { Component, ErrorInfo, ReactNode, memo, useCallback, useEffect, useRef, useState } from 'react'
 import Sphere from '@renderer/components/Sphere'
 import {
-  RiCpuLine,
   RiCameraLine,
-  RiTerminalBoxLine,
-  RiSwapBoxLine,
+  RiCpuLine,
+  RiHistoryLine,
   RiLayoutGridLine,
   RiMicLine,
   RiMicOffLine,
   RiPhoneFill,
-  RiHistoryLine,
   RiPulseLine,
-  RiWifiLine,
-  RiServerLine
+  RiServerLine,
+  RiSwapBoxLine,
+  RiTerminalBoxLine,
+  RiWifiLine
 } from 'react-icons/ri'
 import { FaMemory } from 'react-icons/fa6'
 import { GiTinker } from 'react-icons/gi'
 import { HiComputerDesktop } from 'react-icons/hi2'
 import * as faceapi from 'face-api.js'
 import { VisionMode } from '@renderer/IndexRoot'
-import { SystemStats } from '@renderer/services/system-info'
+import { DriveInfo, SystemStats } from '@renderer/services/system-info'
 
 interface IrisProps {
   isSystemActive: boolean
@@ -37,7 +37,12 @@ interface DashboardViewProps {
   props: IrisProps
   stats: SystemStats | null
   networkRttMs: number | null
-  chatHistory: any[]
+  networkDownlinkMbps: number | null
+  networkType: string
+  drives: DriveInfo[]
+  cpuHistory: number[]
+  ramHistory: number[]
+  chatHistory: TranscriptMessage[]
   onVisionClick: () => void
 }
 
@@ -48,16 +53,78 @@ type TranscriptMessage = {
   timestamp?: string
 }
 
+const glassPanel =
+  'bg-[#09090e]/80 backdrop-blur-xl border border-white/[0.06] rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.4)]'
+
 const getMessageText = (msg: TranscriptMessage): string => {
   if (typeof msg.content === 'string' && msg.content.trim()) return msg.content
   if (Array.isArray(msg.parts) && msg.parts[0]?.text) return msg.parts[0].text
   return ''
 }
 
-const glassPanel =
-  'bg-[#09090e]/80 backdrop-blur-xl border border-white/[0.06] rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.4)]'
+const Sparkline = ({ data, colorClass, label }: { data: number[]; colorClass: string; label: string }) => {
+  const points =
+    data.length > 1
+      ? data
+          .map((value, idx) => {
+            const x = (idx / (data.length - 1)) * 100
+            const y = 100 - Math.max(0, Math.min(100, value))
+            return `${x},${y}`
+          })
+          .join(' ')
+      : ''
 
-function DashboardView({ props, stats, networkRttMs, chatHistory, onVisionClick }: DashboardViewProps) {
+  return (
+    <div className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-2.5">
+      <div className="mb-1.5 flex items-center justify-between">
+        <span className="text-[9px] font-mono tracking-widest text-zinc-500">{label}</span>
+        <span className={`text-[10px] font-semibold tabular-nums ${colorClass}`}>
+          {data.length ? `${data[data.length - 1].toFixed(1)}%` : '--'}
+        </span>
+      </div>
+      <svg viewBox="0 0 100 100" className="h-12 w-full">
+        <polyline points={points} fill="none" stroke="currentColor" strokeWidth="3" className={colorClass} />
+      </svg>
+    </div>
+  )
+}
+
+class DashboardErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: ReactNode }) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+
+  componentDidCatch(_error: Error, _errorInfo: ErrorInfo) {}
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex h-full w-full items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/5 text-xs text-red-300">
+          Visualization unavailable
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
+function DashboardView({
+  props,
+  stats,
+  networkRttMs,
+  networkDownlinkMbps,
+  networkType,
+  drives,
+  cpuHistory,
+  ramHistory,
+  chatHistory,
+  onVisionClick
+}: DashboardViewProps) {
   const {
     isSystemActive,
     isVideoOn,
@@ -71,14 +138,18 @@ function DashboardView({ props, stats, networkRttMs, chatHistory, onVisionClick 
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const videoElementRef = useRef<HTMLVideoElement | null>(null)
+  const mobileScrollRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const faceScanInterval = useRef<NodeJS.Timeout | null>(null)
-
   const [modelsLoaded, setModelsLoaded] = useState(false)
+  const [modelLoadError, setModelLoadError] = useState<string | null>(null)
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
+    }
+    if (mobileScrollRef.current) {
+      mobileScrollRef.current.scrollTo({ top: mobileScrollRef.current.scrollHeight, behavior: 'smooth' })
     }
   }, [chatHistory])
 
@@ -92,7 +163,10 @@ function DashboardView({ props, stats, networkRttMs, chatHistory, onVisionClick 
           faceapi.nets.ageGenderNet.loadFromUri(MODEL_URL)
         ])
         setModelsLoaded(true)
-      } catch (e) {}
+        setModelLoadError(null)
+      } catch (e) {
+        setModelLoadError('Vision models unavailable')
+      }
     }
     loadModels()
   }, [])
@@ -114,10 +188,8 @@ function DashboardView({ props, stats, networkRttMs, chatHistory, onVisionClick 
           const ctx = canvas.getContext('2d')
           if (!ctx) return
           const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.3 })
-          const detection = await faceapi
-            .detectSingleFace(video, options)
-            .withFaceExpressions()
-            .withAgeAndGender()
+          const detection = await faceapi.detectSingleFace(video, options).withFaceExpressions().withAgeAndGender()
+
           ctx.clearRect(0, 0, vw, vh)
           if (detection) {
             const { x, y, width, height } = detection.detection.box
@@ -139,29 +211,17 @@ function DashboardView({ props, stats, networkRttMs, chatHistory, onVisionClick 
             ctx.lineTo(mirroredX + width, y + height)
             ctx.lineTo(mirroredX + width, y + height - l)
             ctx.stroke()
-            const expressions = detection.expressions
-            const domExp = Object.keys(expressions).reduce((a, b) =>
-              expressions[a] > expressions[b] ? a : b
-            )
-            const gender = detection.gender === 'male' ? 'M' : 'F'
-            const age = Math.round(detection.age)
-            const labelText = ` ${gender} Â· ${age} Â· ${domExp.toUpperCase()} `
-            ctx.fillStyle = 'rgba(7,7,15,0.9)'
-            ctx.fillRect(mirroredX, y - 28, width, 22)
-            ctx.fillStyle = '#a78bfa'
-            ctx.font = 'bold 11px "JetBrains Mono", monospace'
-            ctx.fillText(labelText, mirroredX + 4, y - 12)
-          } else {
-            ctx.fillStyle = 'rgba(52, 211, 153, 0.7)'
-            ctx.font = 'bold 11px "JetBrains Mono", monospace'
-            ctx.fillText('SCANNING...', 12, 24)
           }
-        } catch (e) {}
+        } catch {
+          // Keep feed alive even if one detection cycle fails.
+        }
       }, 450)
     } else {
       if (faceScanInterval.current) clearInterval(faceScanInterval.current)
       const ctx = canvasRef.current?.getContext('2d')
-      if (ctx) ctx.clearRect(0, 0, canvasRef.current!.width, canvasRef.current!.height)
+      if (ctx && canvasRef.current) {
+        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
+      }
     }
     return () => {
       if (faceScanInterval.current) clearInterval(faceScanInterval.current)
@@ -222,15 +282,40 @@ function DashboardView({ props, stats, networkRttMs, chatHistory, onVisionClick 
     }
   ]
 
+  const transcriptPanel = (
+    <>
+      {chatHistory.length === 0 ? (
+        <div className="h-full flex flex-col items-center justify-center text-zinc-700 gap-2.5 opacity-40">
+          <RiHistoryLine size={28} />
+          <span className="text-[9px] tracking-[0.2em] uppercase font-mono">No data stream</span>
+        </div>
+      ) : (
+        chatHistory.map((msg, idx) => (
+          <div key={idx} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+            <div
+              className={`max-w-[95%] py-2 px-3 rounded-xl text-[11px] leading-relaxed font-medium transition-all ${
+                msg.role === 'user'
+                  ? 'bg-violet-600/15 border border-violet-500/20 text-violet-100/90 rounded-br-sm'
+                  : 'bg-white/[0.03] border border-white/[0.06] text-zinc-400 rounded-bl-sm'
+              }`}
+            >
+              {getMessageText(msg)}
+            </div>
+            <span className="mt-1 text-[9px] font-mono text-zinc-600">
+              {msg.timestamp
+                ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : ''}
+            </span>
+          </div>
+        ))
+      )}
+    </>
+  )
+
   return (
     <div className="flex-1 p-3 grid grid-cols-12 gap-3 h-full overflow-hidden relative animate-in fade-in zoom-in duration-300 w-full">
-
-      {/* â”€â”€ LEFT PANEL â”€â”€ */}
       <div className="hidden lg:flex col-span-3 flex-col gap-3 h-full z-40">
-
-        {/* Vision Feed Card */}
         <div className={`${glassPanel} h-[200px] shrink-0 flex flex-col overflow-hidden relative group`}>
-          {/* Feed header badge */}
           <div className="absolute top-2.5 left-2.5 z-30 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-full px-2 py-1 border border-white/[0.06]">
             <span
               className={`w-1.5 h-1.5 rounded-full ${isVideoOn ? 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.8)]' : 'bg-zinc-600'} ${isVideoOn ? 'animate-pulse' : ''}`}
@@ -261,10 +346,17 @@ function DashboardView({ props, stats, networkRttMs, chatHistory, onVisionClick 
               playsInline
               muted
             />
-            <canvas
-              ref={canvasRef}
-              className="absolute inset-0 w-full h-full object-cover pointer-events-none z-20"
-            />
+            <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover pointer-events-none z-20" />
+            {isVideoOn && visionMode === 'camera' && !modelsLoaded && !modelLoadError && (
+              <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/55 text-[10px] font-mono tracking-widest text-violet-300">
+                Loading vision models...
+              </div>
+            )}
+            {modelLoadError && visionMode === 'camera' && (
+              <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/55 text-[10px] font-mono tracking-widest text-red-300">
+                {modelLoadError}
+              </div>
+            )}
             {!isVideoOn && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-zinc-700">
                 <RiCameraLine size={22} />
@@ -274,14 +366,10 @@ function DashboardView({ props, stats, networkRttMs, chatHistory, onVisionClick 
           </div>
         </div>
 
-        {/* Neural Uplink Status */}
         <div className={`${glassPanel} shrink-0 p-4`}>
           <div className="flex items-center justify-between mb-3">
             <span className="flex items-center gap-1.5 text-[10px] font-semibold tracking-widest text-zinc-500 uppercase">
-              <RiPulseLine
-                size={12}
-                className={isSystemActive ? 'text-violet-500 animate-pulse' : 'text-zinc-700'}
-              />
+              <RiPulseLine size={12} className={isSystemActive ? 'text-violet-500 animate-pulse' : 'text-zinc-700'} />
               Neural Uplink
             </span>
             <span
@@ -294,35 +382,47 @@ function DashboardView({ props, stats, networkRttMs, chatHistory, onVisionClick 
               {isSystemActive ? 'CONNECTED' : 'STANDBY'}
             </span>
           </div>
-          <div className="flex items-center justify-between">
+          <div className="grid grid-cols-2 gap-2">
             <div>
-              <p className="text-[9px] text-zinc-600 font-mono tracking-widest mb-0.5">WSS LATENCY</p>
+              <p className="text-[9px] text-zinc-600 font-mono tracking-widest mb-0.5">LATENCY</p>
               <span className="text-xs font-semibold text-zinc-300 flex items-center gap-1">
                 <RiWifiLine size={12} className={isSystemActive ? 'text-violet-500' : 'text-zinc-600'} />
                 {isSystemActive ? (networkRttMs ? `${networkRttMs}ms` : '--') : '--'}
               </span>
             </div>
             <div className="text-right">
-              <p className="text-[9px] text-zinc-600 font-mono tracking-widest mb-0.5">HOST NODE</p>
-              <span className="text-xs font-semibold text-zinc-300 flex items-center gap-1 justify-end">
-                {isSystemActive ? 'GEM-V2.5' : 'LOCAL'} <RiServerLine size={12} className="text-zinc-600" />
+              <p className="text-[9px] text-zinc-600 font-mono tracking-widest mb-0.5">DOWNLINK</p>
+              <span className="text-xs font-semibold text-zinc-300">
+                {networkDownlinkMbps ? `${networkDownlinkMbps.toFixed(1)} Mbps` : '--'}
+              </span>
+            </div>
+            <div>
+              <p className="text-[9px] text-zinc-600 font-mono tracking-widest mb-0.5">UPLINK</p>
+              <span className="text-xs font-semibold text-zinc-300">--</span>
+            </div>
+            <div className="text-right">
+              <p className="text-[9px] text-zinc-600 font-mono tracking-widest mb-0.5">TYPE</p>
+              <span className="text-xs font-semibold text-zinc-300 uppercase">
+                {networkType} <RiServerLine size={12} className="inline text-zinc-600" />
               </span>
             </div>
           </div>
-          <div className="w-full h-[2px] bg-black/60 rounded-full mt-3 overflow-hidden">
-            <div
-              className={`h-full bg-violet-600/60 rounded-full transition-all duration-700 ${isSystemActive ? 'w-full animate-pulse' : 'w-0'}`}
-            />
+        </div>
+
+        <div className={`${glassPanel} p-3.5 shrink-0`}>
+          <div className="mb-2 text-[10px] font-semibold tracking-widest text-zinc-500 uppercase">Live Metrics</div>
+          <div className="grid grid-cols-1 gap-2">
+            <Sparkline data={cpuHistory} colorClass="text-blue-400" label="CPU Trend" />
+            <Sparkline data={ramHistory} colorClass="text-violet-400" label="RAM Trend" />
           </div>
         </div>
 
-        {/* Core Metrics Grid */}
         <div className={`${glassPanel} flex-1 p-4 flex flex-col gap-3 min-h-0`}>
           <div className="flex items-center gap-1.5 text-[10px] font-semibold tracking-widest text-zinc-500 uppercase border-b border-white/[0.05] pb-2.5">
             <RiLayoutGridLine size={12} />
             Core Metrics
           </div>
-          <div className="grid grid-cols-2 gap-2 flex-1">
+          <div className="grid grid-cols-2 gap-2">
             {systemMetrics.map((m, i) => (
               <div
                 key={i}
@@ -336,12 +436,31 @@ function DashboardView({ props, stats, networkRttMs, chatHistory, onVisionClick 
               </div>
             ))}
           </div>
+          <div className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-2.5 min-h-0 flex-1 overflow-y-auto">
+            <div className="mb-2 text-[9px] font-mono tracking-widest text-zinc-500">DISK USAGE</div>
+            <div className="space-y-2">
+              {drives.length === 0 && <div className="text-[10px] text-zinc-600">No drive telemetry</div>}
+              {drives.slice(0, 4).map((drive) => {
+                const used = Math.max(0, drive.TotalGB - drive.FreeGB)
+                const usedPct = drive.TotalGB > 0 ? Math.round((used / drive.TotalGB) * 100) : 0
+                return (
+                  <div key={String(drive.Name)}>
+                    <div className="mb-1 flex items-center justify-between text-[10px] text-zinc-400">
+                      <span>{drive.Name}:\\</span>
+                      <span className="tabular-nums">{usedPct}%</span>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full bg-black/60">
+                      <div className="h-full rounded-full bg-cyan-500/70" style={{ width: `${usedPct}%` }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* â”€â”€ CENTER PANEL â”€â”€ */}
       <div className="col-span-12 lg:col-span-6 relative flex flex-col items-center justify-center">
-        {/* Mobile PiP video */}
         <div
           className={`lg:hidden absolute top-3 right-3 w-28 h-20 ${glassPanel} z-50 overflow-hidden ${isVideoOn ? 'block' : 'hidden'}`}
         >
@@ -354,17 +473,16 @@ function DashboardView({ props, stats, networkRttMs, chatHistory, onVisionClick 
           />
         </div>
 
-        {/* 3D Sphere */}
         <div
           className={`w-[58vh] h-[58vh] max-w-full transition-all duration-1000 ${isSystemActive ? 'opacity-100 scale-100' : 'opacity-70 scale-90 grayscale'}`}
         >
-          <Sphere />
+          <DashboardErrorBoundary>
+            <Sphere />
+          </DashboardErrorBoundary>
         </div>
 
-        {/* Control Dock */}
         <div className="absolute bottom-8 z-50">
           <div className="relative flex items-center gap-2 px-5 py-3 bg-[#09090e]/90 backdrop-blur-xl border border-white/[0.07] rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.6)]">
-            {/* Camera / Vision toggle */}
             <button
               onClick={onVisionClick}
               title={isVideoOn ? 'Stop vision' : 'Start vision'}
@@ -377,10 +495,8 @@ function DashboardView({ props, stats, networkRttMs, chatHistory, onVisionClick 
               {isVideoOn ? <RiSwapBoxLine size={18} /> : <RiCameraLine size={18} />}
             </button>
 
-            {/* Divider */}
             <div className="w-px h-6 bg-white/[0.06]" />
 
-            {/* Main call button */}
             <button onClick={toggleSystem} className="relative group mx-1">
               <div
                 className={`cursor-pointer w-12 h-12 rounded-xl flex items-center justify-center border transition-all duration-300 ${
@@ -391,18 +507,14 @@ function DashboardView({ props, stats, networkRttMs, chatHistory, onVisionClick 
               >
                 <RiPhoneFill size={20} className={isSystemActive ? 'animate-pulse' : ''} />
               </div>
-              {isSystemActive && (
-                <div className="absolute inset-0 rounded-xl animate-pulse-ring pointer-events-none" />
-              )}
+              {isSystemActive && <div className="absolute inset-0 rounded-xl animate-pulse-ring pointer-events-none" />}
             </button>
 
-            {/* Divider */}
             <div className="w-px h-6 bg-white/[0.06]" />
 
-            {/* Mic toggle */}
             <button
               onClick={toggleMic}
-              title={isMicMuted ? 'Unmute' : 'Mute'}
+              title={isMicMuted ? 'Unmute (Space)' : 'Mute (Space)'}
               className={`cursor-pointer w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 ${
                 isMicMuted
                   ? 'bg-red-500/15 text-red-400 border border-red-500/25 hover:bg-red-500/25'
@@ -413,9 +525,22 @@ function DashboardView({ props, stats, networkRttMs, chatHistory, onVisionClick 
             </button>
           </div>
         </div>
+
+        <div className="lg:hidden mt-4 w-full px-1 pb-28 grid grid-cols-2 gap-2">
+          <div className={`${glassPanel} p-3 col-span-2`}>
+            <div className="text-[10px] font-semibold tracking-widest text-zinc-500 uppercase mb-2">Live Metrics</div>
+            <div className="grid grid-cols-2 gap-2">
+              <Sparkline data={cpuHistory} colorClass="text-blue-400" label="CPU" />
+              <Sparkline data={ramHistory} colorClass="text-violet-400" label="RAM" />
+            </div>
+          </div>
+          <div className={`${glassPanel} p-3 col-span-2 max-h-40 overflow-y-auto`} ref={mobileScrollRef}>
+            <div className="text-[10px] font-semibold tracking-widest text-zinc-500 uppercase mb-2">Transcript</div>
+            <div className="space-y-2">{transcriptPanel}</div>
+          </div>
+        </div>
       </div>
 
-      {/* â”€â”€ RIGHT PANEL â€” Transcript â”€â”€ */}
       <div className="hidden lg:flex col-span-3 flex-col overflow-hidden h-full z-40">
         <div className={`${glassPanel} h-full p-4 flex flex-col`}>
           <div className="flex items-center justify-between border-b border-white/[0.05] pb-3 mb-3">
@@ -427,31 +552,7 @@ function DashboardView({ props, stats, networkRttMs, chatHistory, onVisionClick 
           </div>
 
           <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-2.5 pr-1 scrollbar-small min-h-0">
-            {chatHistory.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-zinc-700 gap-2.5 opacity-40">
-                <RiHistoryLine size={28} />
-                <span className="text-[9px] tracking-[0.2em] uppercase font-mono">No data stream</span>
-              </div>
-            ) : (
-              chatHistory.map((msg: TranscriptMessage, idx) => (
-                <div key={idx} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                  <div
-                    className={`max-w-[95%] py-2 px-3 rounded-xl text-[11px] leading-relaxed font-medium transition-all ${
-                      msg.role === 'user'
-                        ? 'bg-violet-600/15 border border-violet-500/20 text-violet-100/90 rounded-br-sm'
-                        : 'bg-white/[0.03] border border-white/[0.06] text-zinc-400 rounded-bl-sm'
-                    }`}
-                  >
-                    {getMessageText(msg)}
-                  </div>
-                  <span className="mt-1 text-[9px] font-mono text-zinc-600">
-                    {msg.timestamp
-                      ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                      : ''}
-                  </span>
-                </div>
-              ))
-            )}
+            {transcriptPanel}
           </div>
         </div>
       </div>
@@ -460,4 +561,3 @@ function DashboardView({ props, stats, networkRttMs, chatHistory, onVisionClick 
 }
 
 export default memo(DashboardView)
-

@@ -17,6 +17,12 @@ export interface AppItem {
   id: string
 }
 
+export interface DriveInfo {
+  Name: string
+  FreeGB: number
+  TotalGB: number
+}
+
 let appsCache: AppItem[] = []
 let appsCacheAt = 0
 let appsInFlight: Promise<AppItem[]> | null = null
@@ -53,9 +59,11 @@ export const getAllApps = async (): Promise<AppItem[]> => {
   return appsInFlight
 }
 
-export const getDrives = async (): Promise<any[]> => {
+export const getDrives = async (): Promise<DriveInfo[]> => {
   try {
-    return await window.electron.ipcRenderer.invoke('get-drives')
+    const drives = await window.electron.ipcRenderer.invoke('get-drives')
+    const list = Array.isArray(drives) ? drives : [drives]
+    return list.filter(Boolean)
   } catch (error) {
     return []
   }
