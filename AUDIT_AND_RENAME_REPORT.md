@@ -84,8 +84,40 @@ Project root: `d:\next-gen\Next-Gen-Friend`
 1. `npm run typecheck` -> **Passed**
 2. `npm run build` -> **Passed**
 
-## 6. Final Status
+## 6. Capability Validation (Requested)
+
+| Capability | Status | Notes |
+|---|---|---|
+| Connected Ecosystem Devices | **Restricted (Setup Required)** | Device/API integrations exist, but require external setup (ADB pairing, account auth, API keys, network). |
+| Local File & Process Control | **Partially Working** | Read/write/file ops and app open/close are wired. Folder creation path is broken due missing `create-directory` IPC handler. |
+| Semantic Vector Search | **Restricted (Setup Required)** | Index/search pipeline is wired, but practical search requires setup and `groqKey` for query decomposition flow. |
+| Voice Latency Engine | **Restricted (Setup Required)** | Realtime voice engine is wired, but requires valid Gemini key, microphone permission, and live internet. |
+| Mobile Notification Intercept | **Restricted (Setup Required)** | Implemented via `adb-get-notifications`, requires active Android ADB connection. |
+| Mobile Screen Execution (Tap/Swipe) | **Restricted (Setup Required)** | Implemented via `adb-tap` / `adb-swipe`, requires active Android ADB connection. |
+| Live Web Hacking (CSS/JS Injection) | **Working (With Site Variance)** | `hack-website` handler is present and injection flow runs; output varies by site structure. |
+| Deploy Localhost Wormholes | **Partially Working / Broken in Macro Path** | `open-wormhole` works, but macro/AI execution uses missing `deploy-wormhole` channel and can fail. |
+| Autonomous Email Dispatch | **Restricted (Currently Blocked in This Repo State)** | Gmail handlers exist, but `credentials.json` is required and currently absent, so login/send/draft flow is blocked until configured. |
+| Biometric Security (Face ID) | **Restricted (Setup Required)** | Face vault handlers and enrollment flow are present; requires camera access and local model assets. |
+| HuggingFace Image Generation | **Restricted (Setup Required)** | Feature is implemented, but requires HF API key and is subject to provider availability/rate/model warmup. |
+
+### 6.1 Not Working / Broken Items from the requested list
+
+1. Local File & Process Control (folder creation sub-capability): broken IPC channel (`create-directory` missing).
+2. Deploy Localhost Wormholes (macro/AI path): broken IPC channel mismatch (`deploy-wormhole` invoked but only `open-wormhole` handled).
+
+### 6.2 Restricted Items from the requested list
+
+1. Connected Ecosystem Devices
+2. Semantic Vector Search
+3. Voice Latency Engine
+4. Mobile Notification Intercept
+5. Mobile Screen Execution (Tap/Swipe)
+6. Autonomous Email Dispatch (currently blocked until `credentials.json` is provided)
+7. Biometric Security (Face ID)
+8. HuggingFace Image Generation
+
+## 7. Final Status
 
 - Requested identity cleanup is complete across the codebase (`Boss` naming).
-- Endpoint/feature audit completed.
-- Two endpoint mismatches were found and documented above as likely runtime breakpoints.
+- Endpoint, feature, and requested capability audit completed.
+- Broken and restricted capability items are explicitly listed above.
