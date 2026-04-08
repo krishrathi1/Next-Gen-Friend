@@ -223,7 +223,7 @@ No external key storage
 INSTALLATION & SETUP
 
 Step 1. Clone Repo
-git clone https://github.com/201Harsh/IRIS-AI.git
+git clone <your-repository-url>
 cd IRIS-AI
 
 Step 2. Environment Setup
@@ -319,13 +319,9 @@ DISCLAIMER
 IRIS has deep system-level execution capabilities.
 Use responsibly. The maintainers are not liable for misuse.
 
-ARCHITECT
+OWNER
 
-Harsh Pandey
-AI Systems Engineer
-
-Instagram: @201Harshs (https://www.instagram.com/201harshs/)
-GitHub: @201Harsh (https://github.com/201Harsh)
+Boss
 
 LICENSE
 
@@ -337,4 +333,4 @@ IRIS is not a chatbot. It is a neural extension of your operating system.
 
 "System Online."
 
-Made with ❤️ by Harsh Pandey
+Made by Boss

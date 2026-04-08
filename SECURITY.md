@@ -1,12 +1,10 @@
 # Security Policy
 
-If you believe you've found a legitimate security vulnerability in the IRIS OS Agent, please report it privately. Do not open public GitHub issues for critical zero-days or remote code execution (RCE) flaws.
+If you believe you've found a legitimate security vulnerability in the IRIS OS Agent, please report it privately. Do not open public issues for critical zero-days or remote code execution (RCE) flaws.
 
 ## Reporting
 
-Report vulnerabilities directly via email to the Lead Architect:
-
-- **gamerpandeyharsh@gmail.com**
+Report vulnerabilities directly to **Boss** through your secure project communication channel.
 
 Please allow up to 48 hours for an initial response. IRIS is currently a solo-developed project, but all severe reports are triaged with the highest priority.
 
