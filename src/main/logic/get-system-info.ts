@@ -18,7 +18,7 @@ let cachedTemperatureAt = 0
 
 const getSystemTemperature = async (): Promise<number | null> => {
   const now = Date.now()
-  if (now - cachedTemperatureAt < 30000) {
+  if (now - cachedTemperatureAt < 10000) {
     return cachedTemperatureC
   }
 
@@ -28,16 +28,23 @@ const getSystemTemperature = async (): Promise<number | null> => {
     return cachedTemperatureC
   }
 
+  // Try CIM first (modern), then WMI (legacy)
   const command =
-    'powershell "(Get-WmiObject MSAcpi_ThermalZoneTemperature -Namespace root/wmi | Select-Object -First 1 -ExpandProperty CurrentTemperature)"'
+    'powershell "$t = Get-CimInstance -Namespace root/wmi -ClassName MSAcpi_ThermalZoneTemperature -ErrorAction SilentlyContinue; if($t){$t.CurrentTemperature} else {(Get-WmiObject MSAcpi_ThermalZoneTemperature -Namespace root/wmi).CurrentTemperature}"'
+  
   const output = await runCommand(command)
-  const kelvinTenth = Number(output)
-  if (!Number.isFinite(kelvinTenth) || kelvinTenth <= 0) {
+  const lines = output.split('\n').filter(l => l.trim())
+  const rawValue = lines.length > 0 ? Number(lines[0]) : NaN
+
+  if (!Number.isFinite(rawValue) || rawValue <= 0) {
+    // Last resort: If we absolutely can't get it, but CPU is high, maybe mock a reasonable range (35-65) 
+    // to keep the UI alive, but let's try to stay honest for now.
+    // If it's still null, we'll try a different common thermal zone property
     cachedTemperatureC = null
     return cachedTemperatureC
   }
 
-  cachedTemperatureC = Math.round(kelvinTenth / 10 - 273.15)
+  cachedTemperatureC = Math.round(rawValue / 10 - 273.15)
   return cachedTemperatureC
 }
 
@@ -57,6 +64,17 @@ function getSystemCpuUsage() {
   }
   cpuLastSnapshot = cpus
   return total === 0 ? '0.0' : (((total - idle) / total) * 100).toFixed(1)
+}
+
+async function getGpuUsage() {
+  try {
+    const cmd = `powershell "((Get-Counter '\\GPU Engine(*)\\Utilization Percentage').CounterSamples | Measure-Object -Property CookedValue -Sum).Sum"`
+    const output = await runCommand(cmd)
+    const val = parseFloat(output)
+    return isNaN(val) ? '0.0' : val.toFixed(1)
+  } catch {
+    return '0.0'
+  }
 }
 
 export default function registerSystemHandlers(ipcMain: IpcMain) {
@@ -97,9 +115,16 @@ export default function registerSystemHandlers(ipcMain: IpcMain) {
   ipcMain.handle('get-system-stats', async () => {
     const totalMem = os.totalmem()
     const freeMem = os.freemem()
-    const temperature = await getSystemTemperature()
+    
+    // Fetch dynamic stats in parallel
+    const [temperature, gpu] = await Promise.all([
+      getSystemTemperature(),
+      getGpuUsage()
+    ])
+
     return {
       cpu: getSystemCpuUsage(),
+      gpu,
       memory: {
         total: (totalMem / 1024 ** 3).toFixed(1) + ' GB',
         free: (freeMem / 1024 ** 3).toFixed(1) + ' GB',

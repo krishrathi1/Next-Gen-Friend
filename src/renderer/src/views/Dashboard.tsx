@@ -53,6 +53,7 @@ interface DashboardViewProps {
   drives: DriveInfo[]
   cpuHistory: number[]
   ramHistory: number[]
+  gpuHistory: number[]
   chatHistory: TranscriptMessage[]
   isTyping: boolean
   onVisionClick: () => void
@@ -132,7 +133,7 @@ const Sparkline = ({ data, colorClass, label }: { data: number[]; colorClass: st
           </linearGradient>
         </defs>
         {points && <polygon points={`0,40 ${points} 100,40`} fill={`url(#${gradientId})`} className={colorClass} />}
-        <polyline points={points} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeJoin="round" className={colorClass} />
+        <polyline points={points} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={colorClass} />
       </svg>
     </div>
   )
@@ -171,6 +172,7 @@ function DashboardView({
   drives,
   cpuHistory,
   ramHistory,
+  gpuHistory,
   chatHistory,
   isTyping,
   onVisionClick
@@ -619,7 +621,7 @@ function DashboardView({
           <div className="mb-2 text-[10px] font-semibold tracking-widest text-zinc-500 uppercase">Live Metrics</div>
           <div className="grid grid-cols-1 gap-2">
             <Sparkline data={cpuHistory} colorClass="text-blue-400" label="CPU Trend" />
-            <Sparkline data={ramHistory} colorClass="text-violet-400" label="RAM Trend" />
+            <Sparkline data={gpuHistory} colorClass="text-emerald-400" label="GPU Trend" />
           </div>
         </div>
 

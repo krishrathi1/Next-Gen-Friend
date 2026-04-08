@@ -1,5 +1,6 @@
 export interface SystemStats {
   cpu: string
+  gpu?: string
   memory: {
     total: string
     free: string

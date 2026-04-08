@@ -76,7 +76,7 @@ const ELI = (props: EliProps) => {
   const [networkDownlinkMbps, setNetworkDownlinkMbps] = useState<number | null>(null)
   const [networkType, setNetworkType] = useState<string>('unknown')
   const [drives, setDrives] = useState<DriveInfo[]>([])
-  const [metricHistory, setMetricHistory] = useState<{ cpu: number[]; ram: number[] }>({ cpu: [], ram: [] })
+  const [metricHistory, setMetricHistory] = useState<{ cpu: number[]; ram: number[]; gpu: number[] }>({ cpu: [], ram: [], gpu: [] })
   const [chatHistory, setChatHistory] = useState<any[]>([])
   const [showSourceModal, setShowSourceModal] = useState(false)
   const lastHistorySigRef = useRef('')
@@ -90,9 +90,11 @@ const ELI = (props: EliProps) => {
       if (nextStats) {
         const cpu = Number(nextStats.cpu)
         const ram = Number(nextStats.memory.usedPercentage)
+        const gpu = Number(nextStats.gpu || 0)
         setMetricHistory((prev) => ({
           cpu: Number.isFinite(cpu) ? appendPoint(prev.cpu, cpu) : prev.cpu,
-          ram: Number.isFinite(ram) ? appendPoint(prev.ram, ram) : prev.ram
+          ram: Number.isFinite(ram) ? appendPoint(prev.ram, ram) : prev.ram,
+          gpu: Number.isFinite(gpu) ? appendPoint(prev.gpu, gpu) : prev.gpu
         }))
       }
     }
@@ -254,6 +256,7 @@ const ELI = (props: EliProps) => {
             drives={drives}
             cpuHistory={metricHistory.cpu}
             ramHistory={metricHistory.ram}
+            gpuHistory={metricHistory.gpu}
             chatHistory={chatHistory}
             isTyping={isTyping}
             onVisionClick={handleVisionClick}
