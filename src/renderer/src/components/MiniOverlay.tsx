@@ -74,7 +74,7 @@ const MiniOverlay = ({
      * the shadow had nowhere to render and showed as black blobs at the edges.
      * Background bumped to bg-zinc-950 (fully opaque) to compensate.
      */
-    <div className="mini-overlay-shell drag-region relative w-fit h-[85%] flex items-center justify-center gap-5 px-4 bg-zinc-950 rounded-[999px] border border-purple-700/40 overflow-hidden shadow-2xl">
+    <div className="mini-overlay-shell drag-region relative w-full h-full box-border flex items-center justify-between gap-4 px-3 bg-zinc-950 rounded-[999px] border border-purple-700/40 overflow-hidden shadow-2xl">
 
       {/* Left ambient glow */}
       <div className="pointer-events-none absolute inset-y-1 left-1 w-20 rounded-l-full bg-[radial-gradient(circle_at_left,rgba(168,85,247,0.22),transparent_70%)]" />
