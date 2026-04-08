@@ -38,6 +38,7 @@ interface EliProps {
   startVision: (mode: 'camera' | 'screen') => void
   stopVision: () => void
   activeStream: MediaStream | null
+  isReentering?: boolean
 }
 
 const TABS = [
@@ -179,8 +180,11 @@ const ELI = (props: EliProps) => {
     props.isSystemActive && chatHistory.length > 0 && chatHistory[chatHistory.length - 1]?.role === 'user'
 
   return (
-    <div className="h-screen w-full bg-[#040407] text-zinc-100 font-sans overflow-hidden select-none flex flex-col relative pb-5">
-      <div className="h-[52px] w-full flex items-center justify-between px-4 bg-[#07070d]/90 border-b border-white/[0.05] z-50 backdrop-blur-xl shrink-0">
+    <div
+      className={`h-screen w-full bg-[#040407] text-zinc-100 font-sans overflow-hidden select-none flex flex-col relative pb-5 ${props.isReentering ? 'reentry-content-fx' : ''}`}
+    >
+      <div className="h-[52px] w-full flex items-center justify-between px-4 bg-[#07070d]/90 border-b border-white/[0.05] z-50 backdrop-blur-xl shrink-0 relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-violet-500/40 to-transparent" />
         <div className="hidden lg:flex items-center gap-2.5">
           <div className="relative flex items-center justify-center w-7 h-7">
             <div className="absolute w-full h-full rounded-lg bg-violet-600/10 border border-violet-500/20" />
@@ -192,7 +196,7 @@ const ELI = (props: EliProps) => {
           </div>
         </div>
 
-        <div className="hidden md:flex gap-0.5 bg-white/[0.03] p-1 rounded-xl border border-white/[0.05]">
+        <div className="hidden md:flex gap-0.5 bg-white/[0.03] p-1 rounded-xl border border-white/[0.05] shadow-[0_4px_20px_rgba(0,0,0,0.35)]">
           {TABS.map((tab) => {
             const isActive = activeTab === tab.id
             return (
@@ -231,6 +235,7 @@ const ELI = (props: EliProps) => {
       </div>
 
       <div className="flex-1 overflow-hidden relative bg-[radial-gradient(ellipse_at_top,rgba(124,58,237,0.04)_0%,transparent_60%)]">
+        <div className="aurora-layer pointer-events-none absolute inset-0" />
         <div
           className="absolute inset-0 pointer-events-none opacity-[0.04]"
           style={{

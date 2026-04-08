@@ -21,6 +21,7 @@ export type VisionMode = 'camera' | 'screen' | 'none'
 
 const IndexRoot = () => {
   const [isOverlay, setIsOverlay] = useState(false)
+  const [isReentering, setIsReentering] = useState(false)
 
   const [isSystemActive, setIsSystemActive] = useState(false)
   const [isMicMuted, setIsMicMuted] = useState(true)
@@ -33,9 +34,17 @@ const IndexRoot = () => {
   const activeStreamRef = useRef<MediaStream | null>(null)
   const aiIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const frameCanvasRef = useRef<HTMLCanvasElement | null>(null)
+  const wasOverlayRef = useRef(false)
 
   useEffect(() => {
-    window.electron.ipcRenderer.on('overlay-mode', (_e, mode) => setIsOverlay(mode))
+    window.electron.ipcRenderer.on('overlay-mode', (_e, mode) => {
+      setIsOverlay(mode)
+      if (wasOverlayRef.current && !mode) {
+        setIsReentering(true)
+        setTimeout(() => setIsReentering(false), 900)
+      }
+      wasOverlayRef.current = mode
+    })
     return () => {
       window.electron.ipcRenderer.removeAllListeners('overlay-mode')
     }
@@ -210,7 +219,9 @@ const IndexRoot = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-black overflow-hidden relative border border-purple-800/20 rounded-xl">
+    <div
+      className={`flex flex-col h-screen w-screen bg-black overflow-hidden relative border border-purple-800/20 rounded-xl ${isReentering ? 'reentry-shell-fx' : ''}`}
+    >
       <TitleBar />
       <div className="flex-1 relative">
         <ELI
@@ -223,6 +234,7 @@ const IndexRoot = () => {
           startVision={startVision}
           stopVision={stopVision}
           activeStream={activeStream}
+          isReentering={isReentering}
         />
       </div>
       <SmartDropZonesWidget />
