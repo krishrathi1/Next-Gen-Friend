@@ -42,7 +42,7 @@ const MiniOverlay = ({
       dataArrayRef.current = new Uint8Array(irisService.analyser.frequencyBinCount)
       const checkAudio = () => {
         if (analyzerRef.current && dataArrayRef.current) {
-          analyzerRef.current.getByteFrequencyData(dataArrayRef.current)
+          analyzerRef.current.getByteFrequencyData(dataArrayRef.current as unknown as Uint8Array<ArrayBuffer>)
           const avg = dataArrayRef.current.reduce((a, b) => a + b) / dataArrayRef.current.length
           setIsTalking(avg > 10)
         }
