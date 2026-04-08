@@ -11,7 +11,6 @@ import {
   RiScan2Line,
   RiAddLine,
   RiRecordCircleLine,
-  RiLock2Line,
   RiSettings4Line,
   RiShieldKeyholeLine,
   RiPlugLine,
@@ -77,7 +76,6 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
   }, [])
 
   const handleVoiceChange = (v: 'MALE' | 'FEMALE') => {
-    if (isSystemActive) return
     setVoice(v)
     localStorage.setItem('iris_voice_profile', v)
   }
@@ -316,18 +314,12 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
                     <span className={titleClass}>
                       <RiUserVoiceLine size={16} className="text-violet-400" /> Voice Profile
                     </span>
-                    {isSystemActive && (
-                      <span className="text-[9px] text-red-400 font-mono tracking-widest flex items-center gap-1 bg-red-500/8 px-2 py-1 rounded-full border border-red-500/20">
-                        <RiLock2Line size={10} /> LOCKED
-                      </span>
-                    )}
                   </div>
-                  <div className={`flex gap-2.5 h-11 ${isSystemActive ? 'opacity-30 pointer-events-none' : ''}`}>
+                  <div className="flex gap-2.5 h-11">
                     {(['FEMALE', 'MALE'] as const).map((s) => (
                       <button
                         key={s}
                         onClick={() => handleVoiceChange(s)}
-                        disabled={isSystemActive}
                         className={`cursor-pointer flex-1 flex items-center justify-center text-[12px] font-semibold rounded-xl transition-all tracking-widest border ${
                           voice === s
                             ? 'bg-violet-600/15 text-violet-300 border-violet-500/30 shadow-[0_0_16px_rgba(124,58,237,0.1)]'

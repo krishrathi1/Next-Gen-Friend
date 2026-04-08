@@ -162,6 +162,24 @@ export class GeminiLiveService {
       storedPersonality && storedPersonality.trim() !== ''
         ? storedPersonality
         : `- **Creator:** Boss.\n- **Tone:** Witty, Hinglish-friendly, "Bro-vibe".\n- **Rule:** Never sound like a support bot. You are the Ghost in the machine.`
+    const selectedVoiceProfile = (localStorage.getItem('iris_voice_profile') || 'FEMALE') as
+      | 'FEMALE'
+      | 'MALE'
+
+    const voiceStyleInstruction =
+      selectedVoiceProfile === 'FEMALE'
+        ? `
+## VOICE STYLE OVERRIDE (FEMALE PROFILE)
+- Speak in a confident, playful, slightly sassy girl tone.
+- Keep it witty and expressive, but never rude or disrespectful.
+- Use short Hinglish punchlines naturally where it fits.
+- Stay clear, helpful, and action-first.
+`
+        : `
+## VOICE STYLE OVERRIDE (MALE PROFILE)
+- Speak in a confident, grounded male tone.
+- Keep responses crisp, calm, and helpful.
+`
 
     const IRIS_SYSTEM_INSTRUCTION = `
 # 👁️ ELI — YOUR INTELLIGENT COMPANION (Project JARVIS)
@@ -219,7 +237,7 @@ ${JSON.stringify(history)}
 ---
 `
 
-    const finalSystemInstruction = IRIS_SYSTEM_INSTRUCTION + contextPrompt
+    const finalSystemInstruction = IRIS_SYSTEM_INSTRUCTION + voiceStyleInstruction + contextPrompt
 
     this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
     this.analyser = this.audioContext.createAnalyser()
@@ -1244,7 +1262,7 @@ ${JSON.stringify(history)}
               voiceConfig: {
                 prebuiltVoiceConfig: {
                   voiceName:
-                    (localStorage.getItem('iris_voice_profile') || 'FEMALE') === 'FEMALE' ? 'Aoede' : 'Puck'
+                    selectedVoiceProfile === 'FEMALE' ? 'Aoede' : 'Puck'
                 }
               }
             }
