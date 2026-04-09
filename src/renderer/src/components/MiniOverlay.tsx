@@ -72,7 +72,7 @@ const MiniOverlay = ({
      * in Electron transparent windows on Windows (Chromium compositing bug).
      * Background is bg-zinc-950 (fully opaque) to compensate.
      */
-    <div className="mini-overlay-shell drag-region relative w-full h-full box-border flex items-center justify-between gap-2 px-2.5 bg-zinc-950 rounded-[999px] border border-white/[0.07] overflow-hidden">
+    <div className="mini-overlay-shell drag-region relative w-full h-full box-border flex items-center justify-between gap-1.5 px-2 bg-zinc-950 rounded-[999px] border border-white/[0.07] overflow-hidden">
 
       {/* ── Left — Status dot + audio bars ── */}
       <div className="flex items-center gap-2 no-drag relative z-10">
@@ -116,7 +116,7 @@ const MiniOverlay = ({
           onClick={toggleMic}
           disabled={!isSystemActive}
           title={isMicMuted ? 'Unmute' : 'Mute'}
-          className={`p-2 rounded-full transition-all duration-100 hover:scale-105 active:scale-95 ${
+          className={`p-1.5 rounded-full transition-all duration-100 hover:scale-105 active:scale-95 ${
             !isSystemActive
               ? 'opacity-25'
               : isMicMuted
@@ -124,20 +124,20 @@ const MiniOverlay = ({
                 : 'text-purple-400 bg-purple-700/20'
           }`}
         >
-          {isMicMuted ? <RiMicOffLine size={15} /> : <RiMicLine size={15} />}
+          {isMicMuted ? <RiMicOffLine size={14} /> : <RiMicLine size={14} />}
         </button>
 
         {/* Power */}
         <button
           onClick={toggleSystem}
           title={isSystemActive ? 'Deactivate' : 'Activate'}
-          className={`p-2 rounded-full border transition-all duration-150 mx-0.5 hover:scale-105 active:scale-95 ${
+          className={`p-1.5 rounded-full border transition-all duration-150 mx-0.5 hover:scale-105 active:scale-95 ${
             isSystemActive
               ? 'bg-purple-700/25 border-purple-500/70 text-purple-300'
               : 'bg-zinc-800 border-zinc-600 text-zinc-500 hover:text-red-400 hover:border-red-500/40'
           }`}
         >
-          <GiPowerButton size={16} />
+          <GiPowerButton size={15} />
         </button>
 
         {/* Camera */}
@@ -145,7 +145,7 @@ const MiniOverlay = ({
           onClick={() => handleVisionClick('camera')}
           disabled={!isSystemActive}
           title="Toggle Camera"
-          className={`p-2 rounded-full transition-all duration-100 hover:scale-105 active:scale-95 ${
+          className={`p-1.5 rounded-full transition-all duration-100 hover:scale-105 active:scale-95 ${
             !isSystemActive
               ? 'opacity-25'
               : isVideoOn && visionMode === 'camera'
@@ -153,7 +153,7 @@ const MiniOverlay = ({
                 : 'text-zinc-400 hover:text-white hover:bg-white/[0.07]'
           }`}
         >
-          <RiCameraLine size={15} />
+          <RiCameraLine size={14} />
         </button>
 
         {/* Screen */}
@@ -161,7 +161,7 @@ const MiniOverlay = ({
           onClick={() => handleVisionClick('screen')}
           disabled={!isSystemActive}
           title="Toggle Screen"
-          className={`p-2 rounded-full transition-all duration-100 hover:scale-105 active:scale-95 ${
+          className={`p-1.5 rounded-full transition-all duration-100 hover:scale-105 active:scale-95 ${
             !isSystemActive
               ? 'opacity-25'
               : isVideoOn && visionMode === 'screen'
@@ -169,7 +169,7 @@ const MiniOverlay = ({
                 : 'text-zinc-400 hover:text-white hover:bg-white/[0.07]'
           }`}
         >
-          <RiComputerLine size={15} />
+          <RiComputerLine size={14} />
         </button>
       </div>
 
