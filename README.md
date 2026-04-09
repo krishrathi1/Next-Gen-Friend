@@ -1,217 +1,251 @@
-<div align="center">
+# IRIS AI (Next-Gen-Friend)
 
-<img src="assets/logo.png" alt="IRIS Logo" width="220" />
+IRIS AI is a local-first desktop assistant built with Electron + React. It combines voice interaction, system automation, workflow macros, mobile control (ADB), local memory, and optional cloud auth into one desktop runtime.
 
-# IRIS: The Neural Forge
-### Autonomous Operating System Layer & Intelligence Forge
+The repository folder is `Next-Gen-Friend`, while the packaged desktop app name is `IRIS AI`.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg?style=for-the-badge)](https://www.typescriptlang.org/)
-[![Electron](https://img.shields.io/badge/Electron-39.x-47848F.svg?style=for-the-badge)](https://www.electronjs.org/)
+## Table of Contents
 
----
+1. [What IRIS Does](#what-iris-does)
+2. [Architecture](#architecture)
+3. [Tech Stack](#tech-stack)
+4. [Project Structure](#project-structure)
+5. [Requirements](#requirements)
+6. [Quick Start](#quick-start)
+7. [Environment Variables](#environment-variables)
+8. [NPM Scripts](#npm-scripts)
+9. [Local Data and Storage](#local-data-and-storage)
+10. [Feature Overview](#feature-overview)
+11. [Supabase Setup](#supabase-setup)
+12. [Phone (ADB) Setup](#phone-adb-setup)
+13. [Security Notes](#security-notes)
+14. [Validation Status](#validation-status)
+15. [Troubleshooting](#troubleshooting)
+16. [Additional Docs](#additional-docs)
+17. [Contributing](#contributing)
+18. [License](#license)
 
-<img src="assets/hero_banner.png" alt="IRIS Dashboard" width="100%" />
+## What IRIS Does
 
-</div>
+IRIS is not just a chat UI. It can execute real desktop actions through IPC handlers in the Electron main process.
 
-## 🌌 Executive Philosophy
+Core themes:
 
-**IRIS** (Intelligent Real-time Integrated System) is a **Neural OS Layer**. It abstracts the traditional GUI into a **Neural Command Plane**, allowing high-level intent to be decomposed into deterministic system execution.
+- Voice-first interaction with real-time tool calling.
+- Desktop automation (open/close apps, shell commands, keyboard/mouse actions, window control).
+- File operations (read/write/search/index/open/manage files and directories).
+- Local memory and notes.
+- Macro/workflow editor with reusable automation graphs.
+- Optional deep research and code RAG workflows.
+- Optional Android phone control over ADB.
+- Optional Supabase-based cloud auth and profile flows.
 
----
+## Architecture
 
-## 🏗️ Deep Architecture: The Multi-Process Core
+IRIS follows Electron's multi-process model:
 
-<img src="assets/architecture_3d.png" alt="IRIS 3D Architecture" width="100%" />
+1. `Main process` (`src/main`): privileged OS access, IPC handlers, automation, storage, external API calls.
+2. `Preload` (`src/preload/index.ts`): controlled bridge exposing `window.electron.ipcRenderer.invoke(...)`.
+3. `Renderer` (`src/renderer`): React UI, widgets, dashboard, auth views, macro editor.
 
-### 1. Process Topology & Security
-IRIS utilizes a **Multi-Process Architecture** to ensure that unprivileged UI code cannot directly execute system-level exploits.
+Execution path:
 
-```mermaid
-graph TD
-    subgraph "External World"
-        AD[Active Directory]
-        Net[Public Internet]
-    end
+`UI intent -> preload IPC bridge -> main-process handler -> OS/API action -> UI update`
 
-    subgraph "Renderer Process (Unprivileged)"
-        Dashboard[React Dashboard]
-        Widgets[Floating Widgets]
-        STT[WebSocket Audio Stream]
-    end
+## Tech Stack
 
-    subgraph "Preload (Context Bridge)"
-        API[Selective IPC Exposure]
-        Sanitizer[Input Sanitization]
-    end
+- Electron 39
+- React 19 + TypeScript
+- Vite / electron-vite
+- Tailwind CSS
+- Framer Motion + GSAP
+- Supabase JS client
+- Groq SDK / Google GenAI integrations
+- `@xenova/transformers` + `vectordb` for local semantic search
+- ADB shell integration for Android control
 
-    subgraph "Main Process (Privileged)"
-        Kernel[OS API Access]
-        Router[Neural Router / LLM]
-        Vault[SafeStorage Vault]
-        Scanner[File Crawler / ADB]
-    end
+## Project Structure
 
-    Dashboard -- "Secure Invoke" --> API
-    API --> Sanitizer
-    Sanitizer --> Router
-    Router --> Kernel
-    Router --> Vault
-    Kernel --> AD
-    Router --> Net
+```text
+Next-Gen-Friend/
+  src/
+    main/          # Electron main process: IPC handlers, services, OS actions
+    preload/       # Context bridge
+    renderer/      # React app (views, widgets, tools, services)
+  resources/       # App resources (icon, etc.)
+  build/           # Packaging assets (icons, NSIS resources, entitlements)
+  supabase/        # SQL schema and supabase notes
+  README.md
+  FEATURES_GUIDE.md
+  PHONE_CONNECTION_GUIDE.md
 ```
 
----
+## Requirements
 
-## 🔬 Neural Pipelines (System Low-Level)
+- Node.js 20+ (recommended)
+- npm 10+ (recommended)
+- Windows is the primary target platform for full feature coverage
+- For phone features: ADB installed and available in `PATH` (or set `ADB_PATH`)
+- For cloud auth features: a configured Supabase project
+- For AI features: API keys (set in app settings and/or local `.env`)
 
-### 2. Voice-First Command Routing
-How IRIS transforms biological audio waves into deterministic computer code.
+## Quick Start
 
-```mermaid
-sequenceDiagram
-    participant U as User (Biological)
-    participant R as Renderer (React)
-    participant M as Main (Electron)
-    participant L as LLM (Gemini/Groq)
-    participant OS as Operating System
-
-    U->>R: Voice Command ("Open Spotify")
-    R->>R: Web Audio Stream (PCM)
-    R->>M: IPC: audio-buffer-push
-    M->>L: Multimodal Ingestion (Frame + Audio)
-    L-->>M: Thought: Launch Process (Spotify)
-    M->>OS: spawn("Spotify.exe")
-    OS-->>M: Process PID: 1240
-    M-->>R: UI State: "System Online"
-```
-
-### 3. Vision-First Screen Ingestion (The Peeler)
-IRIS captures and "understands" your desktop content every 2 seconds.
-
-```mermaid
-graph LR
-    subgraph "Capture Loop"
-        Src[desktopCapturer] --> Buffer[PNG Buffer]
-        Buffer --> Sharp[Image Resizing]
-    end
-
-    subgraph "NLU Pipeline"
-        Sharp --> OCR[Tesseract.js OCR]
-        Sharp --> Vision[Gemini Pro Vision]
-        OCR --> Text[Contextual Strings]
-        Vision --> Objects[UI Element Mapping]
-    end
-
-    subgraph "Execution"
-        Text --> LLM[Router]
-        Objects --> Clicker[Coordinate Targeting]
-    end
-```
-
-### 4. Mobile Telekinesis (ADB Protocol)
-Direct remote control of connected Android devices via the Android Debug Bridge.
-
-```mermaid
-graph TD
-    subgraph "System PC"
-        IPC[Renderer Request] --> ADB[Main: ADB Client]
-        ADB --> Shell[execAsync('adb shell')]
-    end
-
-    subgraph "Android Device"
-        Shell --> Battery[dumpsys battery]
-        Shell --> Notifs[notification --noredact]
-        Shell --> Control[input tap/swipe]
-    end
-
-    Battery --> Telemetry[Telemetry UI]
-    Notifs --> Alerts[Desktop Toast]
-```
-
----
-
-## 🧠 Local Memory & Hybrid RAG
-
-IRIS maintains a **Neural Forge** of local knowledge that never leaves the machine.
-
-```mermaid
-graph TD
-    subgraph "Indexing"
-        Files[Local .md / .ts / .pdf] --> Embeds[Transformers.js]
-        Embeds --> Vector[LanceDB Local Index]
-    end
-
-    subgraph "Retrieval Loop"
-        Query[User Input] --> EmbedQuery[Vector Query]
-        EmbedQuery --> DB{LanceDB}
-        DB -- "Top K Matches" --> Context[RAG Prompt]
-        Context --> LLM[Neural Response]
-    end
-```
-
----
-
-## 🔒 Security & Vault Locking
-
-IRIS uses a **Zero-Trust Lockdown Flow** to protect your API credentials.
-
-```mermaid
-graph LR
-    subgraph "Storage"
-        Disk[iris_secure_vault.json]
-    end
-
-    subgraph "Decryption"
-        Main[Main Process] --> DPAPI[safeStorage / Keychain]
-        DPAPI --> Key[In-Memory Key]
-    end
-
-    subgraph "Usage"
-        Key --> Request[AI Provider Request]
-        Request --> Network[HTTPS/TLS]
-    end
-
-    Disk --> Main
-```
-
----
-
-## 🛠️ Developer API Reference (Full IPC Table)
-
-| Call Key | Payload Schema | Return Type | Description |
-| :--- | :--- | :--- | :--- |
-| `index-folder` | `{ folderPath: string }` | `Promise<string>` | Vectorizes a directory. |
-| `adb-tap` | `{ xPercent: number, yPercent: number }` | `Promise<{success}>` | Remote Android touch. |
-| `run-terminal` | `{ command: string }` | `Promise<string>` | Kernel shell execution. |
-| `hack-website` | `{ url: string, mode: string }` | `Promise<{success}>` | DOM Hijacking / Emerald Theme. |
-| `secure-save-keys`| `{ groqKey, geminiKey }` | `Promise<{success}>` | Encrypted keychain write. |
-
----
-
-## 🚀 Deployment & Installation
-
-### Requirements
-- **Hardware**: Windows (Primary), Android Device (Optional for Telekinesis).
-- **Environment**: `adb` must be in system PATH.
-
-### Full Setup
 ```bash
-# Clone the Forge
-git clone 
+git clone https://github.com/krishrathi1/Next-Gen-Friend.git
+cd Next-Gen-Friend
 npm install
+```
+
+Create your local env file:
+
+Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+macOS/Linux:
+
+```bash
+cp .env.example .env
+```
+
+Run development mode:
+
+```bash
 npm run dev
 ```
 
----
+Build:
 
-<div align="center">
+```bash
+npm run build
+```
 
-### 🛡️ Disclaimer
-IRIS possesses deep system privileges. High-level automation carries risk.
+## Environment Variables
 
-**Crafted by [Team WinHAiJi]**  
-*Engineered for the next generation of biological-digital interaction.*
+`IRIS` stores primary runtime AI keys in local app settings/secure storage, but local development still uses `.env` for several integrations.
 
-</div>
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `VITE_SUPABASE_URL` | Yes (for auth flows) | Supabase project URL |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Yes (for auth flows) | Supabase anon key |
+| `VITE_SUPABASE_REDIRECT_URL` | Recommended | OAuth callback URL (default fallback: `http://127.0.0.1:54321/auth/callback`) |
+| `VITE_BACKEND_KEY` | Optional | URL for backend used by Axios client |
+| `VITE_GEMINI_API_KEY` | Optional | Local development fallback key |
+| `VITE_IRIS_AI_API_KEY` | Optional | Legacy/development key name in `.env.example` |
+| `MAIN_VITE_GROQ_API_KEY` | Optional | Groq key placeholder in `.env.example` |
+| `VITE_IMAGE_AI_API_KEY` | Optional | Image generation integrations |
+| `VITE_TAVILY_API_KEY` | Optional | Deep research integration |
+| `VITE_NOTION_API_KEY` | Optional | Notion integration |
+| `VITE_NOTION_DATABASE_ID` | Optional | Notion target DB |
+
+Note: most day-to-day key entry is expected through `Settings -> API Keys` in the app UI.
+
+## NPM Scripts
+
+| Script | Description |
+| --- | --- |
+| `npm run dev` | Run Electron + renderer in development mode |
+| `npm run start` | Preview built app |
+| `npm run typecheck` | Run node + web TypeScript checks |
+| `npm run lint` | Run ESLint checks |
+| `npm run build` | Typecheck + production build |
+| `npm run build:win` | Build Windows installers (`nsis`, `msi`) |
+| `npm run build:mac` | Build macOS package |
+| `npm run build:linux` | Build Linux targets |
+| `npm run build:unpack` | Build unpacked app output |
+| `npm run format` | Prettier format |
+
+## Local Data and Storage
+
+At runtime, IRIS writes local files under Electron `app.getPath('userData')`.
+
+Common files/directories:
+
+- `iris_secure_vault.json`: encrypted Gemini/Groq key blob (`safeStorage` when available)
+- `Notes/*.md`: note files
+- `Gallery/*`: generated/saved images
+- `Chat/iris_memory.json`: short conversation memory
+- `iris_workflows.json`: saved macro/workflow graphs
+- `Connected Devices/Connect-mobile.json`: ADB device history
+- `iris_semantic_db/`: semantic index data
+- `iris_scan_states/*.json`: resumable codebase ingestion state
+- `electron-store` entries: vault PIN hash, face descriptors, personality profile
+
+## Feature Overview
+
+Major capability groups:
+
+- Dashboard: live status, microphone and vision controls, transcript/state surface.
+- Workflows: visual macro editor with trigger/action nodes and reusable sequences.
+- Notes and Gallery: local knowledge and media memory views.
+- Phone module: connect to Android via ADB, stream screenshots, telemetry, quick actions.
+- System tools: app control, terminal execution, file operations, keyboard/mouse automation.
+- AI widgets: weather, stocks, map, image generation, coding stream, deep research, RAG/oracle.
+
+For step-by-step usage of UI modules, see [`FEATURES_GUIDE.md`](./FEATURES_GUIDE.md).
+
+## Supabase Setup
+
+For auth/device-lock flows, initialize Supabase schema:
+
+1. Create/open your Supabase project.
+2. Run SQL from `supabase/schema.sql` in Supabase SQL Editor.
+3. Set `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, and redirect URL in `.env`.
+4. Ensure OAuth redirect includes `http://127.0.0.1:54321/auth/callback`.
+
+## Phone (ADB) Setup
+
+Phone module requires working ADB connectivity.
+
+- Install Android platform-tools.
+- Ensure `adb` is in `PATH`, or set `ADB_PATH`.
+- Pair/connect your phone (USB-first setup is most reliable).
+
+Full guide: [`PHONE_CONNECTION_GUIDE.md`](./PHONE_CONNECTION_GUIDE.md)
+
+## Security Notes
+
+- Renderer access is routed through IPC; privileged operations execute in main process handlers.
+- Sensitive API keys for core voice flow are stored in local secure vault (`safeStorage` where available).
+- PIN and face-lock metadata is stored locally via `electron-store`.
+- IRIS can execute system-level actions. Treat this project as a privileged desktop runtime.
+
+Important hardening note:
+
+- Current `BrowserWindow` config sets `webSecurity: false` and `sandbox: false` for compatibility. Review and harden before production distribution in untrusted environments.
+
+## Validation Status
+
+Current local checks:
+
+- `npm run typecheck`: passes
+- `npm run lint`: fails with a large existing backlog across many source files
+
+This README update is accurate to current code and scripts, but lint cleanup is still an open engineering task.
+
+## Troubleshooting
+
+1. App fails with missing Supabase variables: set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in `.env`.
+2. OAuth callback not completing: confirm redirect URL is `http://127.0.0.1:54321/auth/callback`.
+3. Phone cannot connect: verify `adb devices` works in terminal first.
+4. Voice features not starting: save Gemini/Groq keys in `Settings -> API Keys`.
+5. Wormhole/deep-research features failing: check required keys (Tavily/Notion/Groq) and network availability.
+
+## Additional Docs
+
+- [`FEATURES_GUIDE.md`](./FEATURES_GUIDE.md)
+- [`PHONE_CONNECTION_GUIDE.md`](./PHONE_CONNECTION_GUIDE.md)
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md)
+- [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md)
+- [`SECURITY.md`](./SECURITY.md)
+
+## Contributing
+
+Contributions are welcome. Please read [`CONTRIBUTING.md`](./CONTRIBUTING.md) first and keep changes scoped, testable, and documented.
+
+## License
+
+MIT. See [`LICENSE`](./LICENSE).
