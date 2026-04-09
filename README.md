@@ -95,7 +95,7 @@ graph TD
 3. Set up your `.env` (Use `.env.example` as a template).
 4. Run in development mode:
    ```bash
-   npm run dev
+   npm start
    ```
 
 ---
