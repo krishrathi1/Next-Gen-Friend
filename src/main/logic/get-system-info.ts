@@ -2,6 +2,9 @@ import { BrowserWindow, IpcMain } from 'electron'
 import os from 'os'
 import { exec } from 'child_process'
 
+let cpuMonitorInterval: NodeJS.Timeout | null = null
+let heavyMonitorRunning = false
+
 const runCommand = (cmd: string): Promise<string> => {
   return new Promise((resolve) => {
     exec(cmd, { maxBuffer: 1024 * 1024 * 10 }, (error, stdout) => {
@@ -106,7 +109,8 @@ const MIN_PUSH_INTERVAL_MS = 900
 
 // Low latency CPU monitoring (runs frequently)
 const startCpuMonitor = () => {
-  setInterval(() => {
+  if (cpuMonitorInterval) clearInterval(cpuMonitorInterval)
+  cpuMonitorInterval = setInterval(() => {
     const totalMem = os.totalmem()
     const freeMem = os.freemem()
     const cpuValue = parseFloat(getSystemCpuUsage())
@@ -152,13 +156,16 @@ const startCpuMonitor = () => {
 
 // Heavier monitoring (asynchronous, runs independently)
 const startHeavyMonitor = async () => {
-  while (true) {
+  if (heavyMonitorRunning) return
+  heavyMonitorRunning = true
+  while (heavyMonitorRunning) {
     // Run GPU and Temp in parallel to save time
     const [gpu, temp] = await Promise.all([getGpuUsage(), getSystemTemperature()])
     currentSystemStats.gpu = gpu
     currentSystemStats.temperature = temp
     // Poll heavy counters less frequently to avoid process-spawn jank.
-    await new Promise(r => setTimeout(r, 5000))
+    // Increased to 8 seconds - balance between info and performance.
+    await new Promise(r => setTimeout(r, 8000))
   }
 }
 

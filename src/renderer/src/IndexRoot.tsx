@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import MiniOverlay from './components/MiniOverlay'
 import { irisService } from './services/Iris-voice-ai'
 import { getScreenSourceId } from './hooks/CaptureDesktop'
@@ -263,7 +263,7 @@ const IndexRoot = () => {
           irisService.sendVideoFrame(base64)
         }
       }
-    }, 2400)
+    }, 1200)
   }
 
   if (isOverlay) {
