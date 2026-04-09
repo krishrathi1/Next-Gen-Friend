@@ -15,6 +15,8 @@ const runCommand = (cmd: string): Promise<string> => {
 let cpuLastSnapshot = os.cpus()
 let cachedTemperatureC: number | null = null
 let cachedTemperatureAt = 0
+let cachedGpuUsage = '0.0'
+let cachedGpuAt = 0
 
 const getSystemTemperature = async (): Promise<number | null> => {
   const now = Date.now()
@@ -67,13 +69,22 @@ function getSystemCpuUsage() {
 }
 
 async function getGpuUsage() {
+  const now = Date.now()
+  if (now - cachedGpuAt < 5000) {
+    return cachedGpuUsage
+  }
+
   try {
     const cmd = `powershell "((Get-Counter '\\GPU Engine(*)\\Utilization Percentage').CounterSamples | Measure-Object -Property CookedValue -Sum).Sum"`
     const output = await runCommand(cmd)
     const val = parseFloat(output)
-    return isNaN(val) ? '0.0' : val.toFixed(1)
+    cachedGpuUsage = isNaN(val) ? '0.0' : val.toFixed(1)
+    cachedGpuAt = now
+    return cachedGpuUsage
   } catch {
-    return '0.0'
+    cachedGpuUsage = '0.0'
+    cachedGpuAt = now
+    return cachedGpuUsage
   }
 }
 
@@ -108,8 +119,8 @@ const startHeavyMonitor = async () => {
     const [gpu, temp] = await Promise.all([getGpuUsage(), getSystemTemperature()])
     currentSystemStats.gpu = gpu
     currentSystemStats.temperature = temp
-    // Wait bit longer before polling heavy counters again to prevent CPU spikes
-    await new Promise(r => setTimeout(r, 2000))
+    // Poll heavy counters less frequently to avoid process-spawn jank.
+    await new Promise(r => setTimeout(r, 5000))
   }
 }
 

@@ -1,9 +1,17 @@
 import fs from 'fs'
 import fsPromises from 'fs/promises'
 import path from 'path'
-import { IpcMain, App } from 'electron'
+import { IpcMain, App, BrowserWindow } from 'electron'
 
-export default function registerIpcHandlers({ ipcMain, app }: { ipcMain: IpcMain; app: App }) {
+export default function registerIpcHandlers({
+  ipcMain,
+  app,
+  getMainWindow
+}: {
+  ipcMain: IpcMain
+  app: App
+  getMainWindow?: () => BrowserWindow | null
+}) {
   const CHAT_DIR = path.resolve(app.getPath('userData'), 'Chat')
   const FILE_PATH = path.join(CHAT_DIR, 'iris_memory.json')
   type HistoryEntry = { role: string; content: string; timestamp: string }
@@ -56,6 +64,10 @@ export default function registerIpcHandlers({ ipcMain, app }: { ipcMain: IpcMain
       if (historyCache.length > 20) historyCache = historyCache.slice(-20)
 
       scheduleFlush()
+      const target = getMainWindow?.()
+      if (target && !target.isDestroyed()) {
+        target.webContents.send('history-updated')
+      }
       return true
     } catch (err) {
       return false

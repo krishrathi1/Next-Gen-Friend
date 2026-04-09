@@ -76,6 +76,9 @@ let pendingOAuthUrl: string | null = null
 let oauthCallbackServer: http.Server | null = null
 
 const secureConfigPath = join(app.getPath('userData'), 'iris_secure_vault.json')
+const OVERLAY_WIDTH = 720
+const OVERLAY_HEIGHT = 106
+const OVERLAY_BOTTOM_OFFSET = 40
 
 function extractIrisUrl(argv: string[]): string | null {
   return argv.find((arg) => typeof arg === 'string' && arg.startsWith('iris://')) || null
@@ -139,7 +142,7 @@ function createWindow(): void {
     }
   })
 
-  ipcMain.on('window-min', () => mainWindow?.minimize())
+  ipcMain.on('window-min', () => setOverlayMode(true))
   ipcMain.on('window-close', () => mainWindow?.close())
   ipcMain.on('window-max', () => {
     if (mainWindow?.isMaximized()) mainWindow.unmaximize()
@@ -169,32 +172,34 @@ app.on('second-instance', (event, commandLine) => {
   if (url) forwardOAuthCallback(url)
 })
 
-function toggleOverlayMode() {
+function setOverlayMode(enabled: boolean) {
   if (!mainWindow) return
 
   const primaryDisplay = screen.getPrimaryDisplay()
   const { width, height } = primaryDisplay.workAreaSize
 
-  if (isOverlayMode) {
+  if (!enabled) {
     mainWindow.setResizable(true)
     mainWindow.setAlwaysOnTop(false)
     mainWindow.setFullScreen(true)
     mainWindow.webContents.send('overlay-mode', false)
   } else {
     mainWindow.setFullScreen(false)
-    const w = 360
-    const h = 74
     mainWindow.setBounds({
-      width: w,
-      height: h,
-      x: Math.floor(width / 2 - w / 2),
-      y: height - h - 50
+      width: OVERLAY_WIDTH,
+      height: OVERLAY_HEIGHT,
+      x: Math.floor(width / 2 - OVERLAY_WIDTH / 2),
+      y: height - OVERLAY_HEIGHT - OVERLAY_BOTTOM_OFFSET
     })
     mainWindow.setAlwaysOnTop(true, 'screen-saver')
     mainWindow.setResizable(false)
     mainWindow.webContents.send('overlay-mode', true)
   }
-  isOverlayMode = !isOverlayMode
+  isOverlayMode = enabled
+}
+
+function toggleOverlayMode() {
+  setOverlayMode(!isOverlayMode)
 }
 
 function startOAuthCallbackServer() {
@@ -361,7 +366,7 @@ app.whenReady().then(() => {
   registerFileOps(ipcMain)
   registerFileScanner(ipcMain)
   registerSystemHandlers(ipcMain)
-  registerIpcHandlers({ ipcMain, app })
+  registerIpcHandlers({ ipcMain, app, getMainWindow: () => mainWindow })
 
   ipcMain.handle('get-screen-source', async () => {
     const sources = await desktopCapturer.getSources({ types: ['screen'] })

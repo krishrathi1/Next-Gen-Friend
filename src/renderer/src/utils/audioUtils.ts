@@ -27,14 +27,17 @@ export function downsampleTo16000(float32Array: Float32Array, inputSampleRate: n
   if (inputSampleRate === 16000) return float32Array;
   
   const compression = inputSampleRate / 16000;
-  const length = float32Array.length / compression;
+  const length = Math.max(1, Math.floor(float32Array.length / compression));
   const result = new Float32Array(length);
 
   let index = 0;
   let inputIndex = 0;
 
   while (index < length) {
-    result[index] = float32Array[Math.floor(inputIndex)];
+    const lower = Math.floor(inputIndex);
+    const upper = Math.min(lower + 1, float32Array.length - 1);
+    const frac = inputIndex - lower;
+    result[index] = float32Array[lower] * (1 - frac) + float32Array[upper] * frac;
     inputIndex += compression;
     index++;
   }

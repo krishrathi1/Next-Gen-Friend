@@ -172,8 +172,14 @@ const ELI = (props: EliProps) => {
     }
 
     fetchHistory()
-    const interval = setInterval(fetchHistory, 1200)
-    return () => clearInterval(interval)
+    const onHistoryUpdated = () => {
+      fetchHistory()
+    }
+
+    window.electron.ipcRenderer.on('history-updated', onHistoryUpdated)
+    return () => {
+      window.electron.ipcRenderer.removeListener('history-updated', onHistoryUpdated)
+    }
   }, [isDashboardActive])
 
   const handleVisionClick = () => {
