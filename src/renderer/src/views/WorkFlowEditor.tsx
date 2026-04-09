@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+﻿import React, { useState, useCallback } from 'react'
 import ReactFlow, {
   addEdge,
   Background,
@@ -29,6 +29,7 @@ import {
   RiFileTextLine,
   RiFlowChart
 } from 'react-icons/ri'
+import { useToastStore } from '@renderer/store/toast-store'
 
 import { getMacroSequence } from '@renderer/code/macro-executor'
 import {
@@ -36,7 +37,7 @@ import {
   scrollScreen,
   setVolume,
   takeScreenshot
-} from '@renderer/functions/keybaord-manager'
+} from '@renderer/functions/keyboard-manager'
 import { closeApp, openApp, performWebSearch } from '@renderer/functions/apps-manager-api'
 import {
   scheduleWhatsAppMessage,
@@ -118,6 +119,7 @@ function Editor() {
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set())
   const [isRunning, setIsRunning] = useState(false)
   const [runProgress, setRunProgress] = useState<{ current: number; total: number; step: string } | null>(null)
+  const addToast = useToastStore((s) => s.addToast)
 
   const openParameterEditor = useCallback((nodeId: string) => setSelectedNodeId(nodeId), [])
 
@@ -233,7 +235,7 @@ function Editor() {
     if (!macroRes.success) {
       setIsRunning(false)
       setRunProgress(null)
-      alert(`❌ Execution Failed: ${macroRes.error}`)
+      addToast(`Execution failed: ${macroRes.error}`, 'error')
       return
     }
     const totalSteps = macroRes.steps.length
@@ -297,7 +299,7 @@ function Editor() {
       } catch (stepError) {
         setIsRunning(false)
         setRunProgress(null)
-        alert(`🔴 Macro Execution Halted! Failed at step ${i + 1}: ${step.tool}`)
+        addToast(`Macro halted at step ${i + 1}: ${step.tool}`, 'error')
         return
       }
     }
@@ -317,7 +319,7 @@ function Editor() {
   return (
     <div className="flex h-full w-full bg-[#040407] relative overflow-hidden">
 
-      {/* ── Sidebar ── */}
+      {/* â”€â”€ Sidebar â”€â”€ */}
       <div
         className={`fixed top-[52px] left-0 h-[calc(100vh-52px)] bg-[#08080e]/95 backdrop-blur-xl border-r border-white/[0.06] flex flex-col transition-all duration-300 ease-in-out z-40 ${isSidebarOpen ? 'w-[290px] opacity-100' : 'w-0 opacity-0'}`}
       >
@@ -403,7 +405,7 @@ function Editor() {
         {isSidebarOpen ? <RiLayoutColumnLine size={16} /> : <RiLayoutColumnFill size={16} />}
       </button>
 
-      {/* ── Canvas Area ── */}
+      {/* â”€â”€ Canvas Area â”€â”€ */}
       <div
         className={`grow flex flex-col relative transition-all duration-300 ease-in-out ${isSidebarOpen ? 'ml-[290px]' : 'ml-0'}`}
         onDrop={onDrop}
@@ -489,7 +491,7 @@ function Editor() {
                   />
                 </div>
                 <span className="text-[9px] font-mono text-zinc-500 tracking-wider">
-                  {runProgress.step === 'COMPLETE' ? '✓ DONE' : `${runProgress.current}/${runProgress.total}`}
+                  {runProgress.step === 'COMPLETE' ? 'âœ“ DONE' : `${runProgress.current}/${runProgress.total}`}
                 </span>
               </div>
             )}
@@ -581,3 +583,4 @@ export default function WorkFlowEditorView() {
     </ReactFlowProvider>
   )
 }
+

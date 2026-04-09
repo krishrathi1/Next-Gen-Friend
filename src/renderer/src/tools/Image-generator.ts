@@ -7,7 +7,8 @@ export const handleImageGeneration = async (prompt: string) => {
   window.dispatchEvent(loadingEvent)
 
   try {
-    const HF_API_KEY = localStorage.getItem('iris_hf_api_key') || ''
+    const secureKeys = await window.electron.ipcRenderer.invoke('secure-get-keys').catch(() => null)
+    const HF_API_KEY = secureKeys?.hfKey || localStorage.getItem('iris_hf_api_key') || ''
 
     if (!HF_API_KEY.trim()) {
       throw new Error(

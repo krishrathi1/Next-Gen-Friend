@@ -7,6 +7,7 @@ import {
   RiFileCopyLine,
   RiEditBoxLine
 } from 'react-icons/ri'
+import { useToastStore } from '@renderer/store/toast-store'
 
 interface MacroMenuProps {
   loadMacroToCanvas: (macro: any) => void
@@ -17,6 +18,7 @@ export default function MacroManagementMenu({ loadMacroToCanvas }: MacroMenuProp
   const [isMainOpen, setIsMainOpen] = useState(false)
   const [activeWorkflowActions, setActiveWorkflowActions] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
+  const addToast = useToastStore((s) => s.addToast)
 
   const loadWorkflowsList = async () => {
     try {
@@ -62,7 +64,7 @@ export default function MacroManagementMenu({ loadMacroToCanvas }: MacroMenuProp
     const newMacro = { ...macro, name: `${macro.name} Copy` }
     loadMacroToCanvas(newMacro)
     setIsMainOpen(false)
-    alert(`Duplicated to canvas as '${newMacro.name}'. Change the name and save to finalize.`)
+    addToast(`Duplicated to canvas as '${newMacro.name}'. Change the name and save to finalize.`, 'info')
   }
 
   return (

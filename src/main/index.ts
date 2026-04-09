@@ -11,6 +11,7 @@ import {
 } from 'electron'
 import path, { join } from 'path'
 import fs from 'fs'
+import fsPromises from 'fs/promises'
 import os from 'os'
 import crypto from 'crypto'
 import http from 'http'
@@ -76,6 +77,9 @@ let pendingOAuthUrl: string | null = null
 let oauthCallbackServer: http.Server | null = null
 
 const secureConfigPath = join(app.getPath('userData'), 'iris_secure_vault.json')
+const OVERLAY_WIDTH = 620
+const OVERLAY_HEIGHT = 88
+const OVERLAY_BOTTOM_OFFSET = 34
 
 function extractIrisUrl(argv: string[]): string | null {
   return argv.find((arg) => typeof arg === 'string' && arg.startsWith('iris://')) || null
@@ -114,7 +118,6 @@ function createWindow(): void {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
       backgroundThrottling: false,
-      webSecurity: false
     }
   })
 
@@ -139,7 +142,7 @@ function createWindow(): void {
     }
   })
 
-  ipcMain.on('window-min', () => mainWindow?.minimize())
+  ipcMain.on('window-min', () => setOverlayMode(true))
   ipcMain.on('window-close', () => mainWindow?.close())
   ipcMain.on('window-max', () => {
     if (mainWindow?.isMaximized()) mainWindow.unmaximize()
@@ -169,32 +172,34 @@ app.on('second-instance', (event, commandLine) => {
   if (url) forwardOAuthCallback(url)
 })
 
-function toggleOverlayMode() {
+function setOverlayMode(enabled: boolean) {
   if (!mainWindow) return
 
   const primaryDisplay = screen.getPrimaryDisplay()
   const { width, height } = primaryDisplay.workAreaSize
 
-  if (isOverlayMode) {
+  if (!enabled) {
     mainWindow.setResizable(true)
     mainWindow.setAlwaysOnTop(false)
     mainWindow.setFullScreen(true)
     mainWindow.webContents.send('overlay-mode', false)
   } else {
     mainWindow.setFullScreen(false)
-    const w = 360
-    const h = 74
     mainWindow.setBounds({
-      width: w,
-      height: h,
-      x: Math.floor(width / 2 - w / 2),
-      y: height - h - 50
+      width: OVERLAY_WIDTH,
+      height: OVERLAY_HEIGHT,
+      x: Math.floor(width / 2 - OVERLAY_WIDTH / 2),
+      y: height - OVERLAY_HEIGHT - OVERLAY_BOTTOM_OFFSET
     })
     mainWindow.setAlwaysOnTop(true, 'screen-saver')
     mainWindow.setResizable(false)
     mainWindow.webContents.send('overlay-mode', true)
   }
-  isOverlayMode = !isOverlayMode
+  isOverlayMode = enabled
+}
+
+function toggleOverlayMode() {
+  setOverlayMode(!isOverlayMode)
 }
 
 function startOAuthCallbackServer() {
@@ -232,45 +237,53 @@ function startOAuthCallbackServer() {
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.electron')
 
-  ipcMain.handle('secure-save-keys', async (_, { groqKey, geminiKey }) => {
+  ipcMain.handle(
+    'secure-save-keys',
+    async (_, { groqKey, geminiKey, hfKey, notionKey, tavilyKey }) => {
     try {
-      let groqEncrypted, geminiEncrypted
-
-      if (safeStorage.isEncryptionAvailable()) {
-        groqEncrypted = safeStorage.encryptString(groqKey).toString('base64')
-        geminiEncrypted = safeStorage.encryptString(geminiKey).toString('base64')
-      } else {
-        groqEncrypted = Buffer.from(groqKey).toString('base64')
-        geminiEncrypted = Buffer.from(geminiKey).toString('base64')
+      const protect = (value: string) => {
+        const safe = value || ''
+        if (safeStorage.isEncryptionAvailable()) {
+          return safeStorage.encryptString(safe).toString('base64')
+        }
+        return Buffer.from(safe).toString('base64')
       }
 
-      const secureData = {
-        groq: groqEncrypted,
-        gemini: geminiEncrypted
+      const secureData: Record<string, string> = {
+        groq: protect(groqKey),
+        gemini: protect(geminiKey),
+        hf: protect(hfKey),
+        notion: protect(notionKey),
+        tavily: protect(tavilyKey)
       }
 
-      fs.writeFileSync(secureConfigPath, JSON.stringify(secureData))
+      await fsPromises.writeFile(secureConfigPath, JSON.stringify(secureData))
       return { success: true }
     } catch (error: any) {
       return { success: false, error: error.message }
     }
-  })
+    }
+  )
 
   ipcMain.handle('secure-get-keys', async () => {
     if (!fs.existsSync(secureConfigPath)) return null
     try {
-      const data = JSON.parse(fs.readFileSync(secureConfigPath, 'utf8'))
-      let groqKey, geminiKey
-
-      if (safeStorage.isEncryptionAvailable()) {
-        groqKey = safeStorage.decryptString(Buffer.from(data.groq, 'base64'))
-        geminiKey = safeStorage.decryptString(Buffer.from(data.gemini, 'base64'))
-      } else {
-        groqKey = Buffer.from(data.groq, 'base64').toString('utf8')
-        geminiKey = Buffer.from(data.gemini, 'base64').toString('utf8')
+      const data = JSON.parse(await fsPromises.readFile(secureConfigPath, 'utf8'))
+      const unprotect = (value?: string) => {
+        if (!value) return ''
+        if (safeStorage.isEncryptionAvailable()) {
+          return safeStorage.decryptString(Buffer.from(value, 'base64'))
+        }
+        return Buffer.from(value, 'base64').toString('utf8')
       }
 
-      return { groqKey, geminiKey }
+      const groqKey = unprotect(data.groq)
+      const geminiKey = unprotect(data.gemini)
+      const hfKey = unprotect(data.hf)
+      const notionKey = unprotect(data.notion)
+      const tavilyKey = unprotect(data.tavily)
+
+      return { groqKey, geminiKey, hfKey, notionKey, tavilyKey }
     } catch (err) {
       return null
     }
@@ -360,8 +373,8 @@ app.whenReady().then(() => {
   registerFileWrite(ipcMain)
   registerFileOps(ipcMain)
   registerFileScanner(ipcMain)
-  registerSystemHandlers(ipcMain)
-  registerIpcHandlers({ ipcMain, app })
+  registerSystemHandlers(ipcMain, { getMainWindow: () => mainWindow })
+  registerIpcHandlers({ ipcMain, app, getMainWindow: () => mainWindow })
 
   ipcMain.handle('get-screen-source', async () => {
     const sources = await desktopCapturer.getSources({ types: ['screen'] })

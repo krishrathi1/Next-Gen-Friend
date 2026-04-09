@@ -1,9 +1,19 @@
-import { IpcMain, shell } from 'electron'
+import { IpcMain, app, shell } from 'electron'
 import puppeteer from 'puppeteer-extra'
 import StealthPlugin from 'puppeteer-extra-plugin-stealth'
 import { load } from 'cheerio'
 
 puppeteer.use(StealthPlugin())
+let browserInstance: any = null
+
+const getBrowser = async () => {
+  if (browserInstance && browserInstance.isConnected()) return browserInstance
+  browserInstance = await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+  })
+  return browserInstance
+}
 
 const USER_BOOKMARKS: Record<string, string> = {
   instagram: 'https://instagram.com',
@@ -68,9 +78,16 @@ const getSmartUrl = (
 }
 
 export default function registerWebAgent(ipcMain: IpcMain) {
-  ipcMain.handle('google-search', async (_event, query: string) => {
-    let browser: any = null
+  app.once('will-quit', async () => {
+    if (browserInstance && browserInstance.isConnected()) {
+      try {
+        await browserInstance.close()
+      } catch {}
+      browserInstance = null
+    }
+  })
 
+  ipcMain.handle('google-search', async (_event, query: string) => {
     try {
       const smartRoute = getSmartUrl(query)
       const finalUrl = smartRoute
@@ -83,10 +100,7 @@ export default function registerWebAgent(ipcMain: IpcMain) {
         return `I've opened ${smartRoute.source} for you.`
       }
 
-      browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-      })
+      const browser = await getBrowser()
 
       const page = await browser.newPage()
       await page.setUserAgent(
@@ -125,15 +139,12 @@ export default function registerWebAgent(ipcMain: IpcMain) {
         }
       }
 
-      await browser.close()
-
       if (!summary || summary.length < 20) {
         return "I've opened the website for you."
       }
 
       return `I've opened the link. Here is a quick summary:\n${summary.substring(0, 500)}...`
     } catch (error: any) {
-      if (browser) await browser.close()
       return "I opened the browser, but couldn't read the content."
     }
   })

@@ -1,4 +1,4 @@
-import { memo, useState, useEffect, useRef } from 'react'
+﻿import { memo, useState, useEffect, useRef } from 'react'
 import { FaAndroid } from 'react-icons/fa6'
 import {
   RiLinkM,
@@ -219,7 +219,7 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
     }
   }
 
-  /* ── DEVICE HISTORY VIEW ── */
+  /* â”€â”€ DEVICE HISTORY VIEW â”€â”€ */
   if (status !== 'connected' && uiMode === 'history') {
     return (
       <div className="flex-1 h-full min-h-0 flex flex-col items-center justify-start pt-12 p-8 bg-[#040407] text-zinc-100 overflow-y-auto scrollbar-small animate-in fade-in duration-300">
@@ -289,7 +289,7 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
     )
   }
 
-  /* ── MANUAL CONNECT VIEW ── */
+  /* â”€â”€ MANUAL CONNECT VIEW â”€â”€ */
   if (status !== 'connected' && uiMode === 'manual') {
     return (
       <div className="flex-1 h-full min-h-0 flex flex-col lg:flex-row items-center justify-center gap-8 p-8 bg-[#040407] text-zinc-100 overflow-y-auto scrollbar-small animate-in fade-in duration-300">
@@ -376,7 +376,7 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
     )
   }
 
-  /* ── CONNECTED VIEW ── */
+  /* â”€â”€ CONNECTED VIEW â”€â”€ */
   return (
     <div className="flex-1 h-full min-h-0 flex flex-col lg:flex-row items-center justify-center gap-10 p-8 bg-[#040407] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.12),transparent)] animate-in fade-in duration-700 overflow-y-auto scrollbar-small">
       
@@ -384,34 +384,42 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
       <div className="w-full lg:w-72 flex flex-col gap-6 shrink-0 self-stretch justify-center pt-8 lg:pt-0">
         
         {/* Device Header */}
-        <div className="bg-gradient-to-br from-white/[0.06] to-white/[0.01] border border-white/[0.08] rounded-[2rem] p-6 backdrop-blur-xl relative overflow-hidden shadow-2xl">
-          <div className="absolute top-0 right-0 p-5">
-            <span className="flex h-2.5 w-2.5 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]"></span>
+        <div className="relative overflow-hidden rounded-[2rem] border border-white/[0.08] bg-gradient-to-br from-[#151528] via-[#111425] to-[#090c16] p-5 shadow-[0_16px_40px_rgba(0,0,0,0.45)]">
+          <div className="absolute -top-10 -left-10 h-36 w-36 rounded-full bg-violet-500/20 blur-[55px] pointer-events-none" />
+          <div className="absolute -top-8 -right-10 h-32 w-32 rounded-full bg-cyan-500/15 blur-[50px] pointer-events-none" />
+
+          <div className="relative z-10 flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3.5 min-w-0">
+              <div className="grid h-14 w-14 place-items-center rounded-2xl border border-violet-400/35 bg-gradient-to-br from-violet-500/25 to-violet-900/15 shadow-[0_0_24px_rgba(139,92,246,0.28)] shrink-0">
+                <RiSmartphoneLine className="text-violet-200" size={25} />
+              </div>
+              <div className="min-w-0">
+                <h2 className="truncate text-[17px] font-black tracking-wide text-white">{telemetry.model}</h2>
+                <p className="mt-1 text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-400">{telemetry.os}</p>
+              </div>
+            </div>
+
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/35 bg-emerald-400/10 px-2.5 py-1 text-[9px] font-mono tracking-[0.2em] text-emerald-300 shrink-0">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-80" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-300" />
+              </span>
+              LIVE
             </span>
           </div>
-          <div className="flex items-center gap-4 mb-5">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/10 border border-violet-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.2)]">
-              <RiSmartphoneLine className="text-violet-300" size={26} />
+
+          <div className="relative z-10 mt-4 h-px bg-gradient-to-r from-transparent via-white/12 to-transparent" />
+
+          <div className="relative z-10 mt-4 grid grid-cols-2 gap-3">
+            <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/[0.06] px-3 py-2.5">
+              <span className="block text-[8px] font-mono tracking-[0.24em] text-zinc-500">STATUS</span>
+              <span className="mt-1 block text-[12px] font-black tracking-[0.14em] text-emerald-300">LIVE UPLINK</span>
             </div>
-            <div>
-              <h2 className="text-[17px] font-bold text-white tracking-wide">{telemetry.model}</h2>
-              <p className="text-[10px] text-zinc-400 font-mono tracking-widest uppercase mt-0.5">{telemetry.os}</p>
-            </div>
-          </div>
-          <div className="flex justify-between items-center bg-[#07070b]/80 rounded-xl py-3 px-5 border border-white/[0.04]">
-            <div className="flex flex-col">
-              <span className="text-[9px] text-zinc-500 font-mono tracking-widest">STATUS</span>
-              <span className="text-[11px] text-emerald-400 font-bold tracking-widest mt-0.5">LIVE UPLINK</span>
-            </div>
-            <div className="w-[1px] h-6 bg-white/[0.1]"></div>
-            <div className="flex flex-col text-right">
-              <span className="text-[9px] text-zinc-500 font-mono tracking-widest">THERMAL</span>
-              <span className="text-[11px] text-amber-400 font-bold tracking-widest mt-0.5">{telemetry.battery.temp}°C</span>
+            <div className="rounded-xl border border-amber-400/20 bg-amber-400/[0.06] px-3 py-2.5 text-right">
+              <span className="block text-[8px] font-mono tracking-[0.24em] text-zinc-500">THERMAL</span>
+              <span className="mt-1 block text-[12px] font-black tracking-[0.08em] text-amber-300">{telemetry.battery.temp}degC</span>
             </div>
           </div>
-          <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-violet-500/10 blur-[40px] pointer-events-none rounded-full" />
         </div>
 
         {/* Metric Cards */}
@@ -618,3 +626,4 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
 }
 
 export default memo(PhoneView)
+

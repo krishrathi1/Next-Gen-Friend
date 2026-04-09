@@ -1,4 +1,5 @@
 import fs from 'fs'
+import fsPromises from 'fs/promises'
 import path from 'path'
 import { IpcMain, App } from 'electron'
 
@@ -13,7 +14,7 @@ export default function registerPermanentMemory({ ipcMain, app }: { ipcMain: Ipc
       let memoryBank: { fact: string; timestamp: string }[] = []
 
       if (fs.existsSync(FILE_PATH)) {
-        const data = fs.readFileSync(FILE_PATH, 'utf-8')
+        const data = await fsPromises.readFile(FILE_PATH, 'utf-8')
         memoryBank = data ? JSON.parse(data) : []
       }
 
@@ -22,7 +23,7 @@ export default function registerPermanentMemory({ ipcMain, app }: { ipcMain: Ipc
         timestamp: new Date().toISOString()
       })
 
-      fs.writeFileSync(FILE_PATH, JSON.stringify(memoryBank, null, 2))
+      await fsPromises.writeFile(FILE_PATH, JSON.stringify(memoryBank, null, 2))
       return true
     } catch (err) {
       return false
@@ -32,7 +33,7 @@ export default function registerPermanentMemory({ ipcMain, app }: { ipcMain: Ipc
   ipcMain.handle('search-core-memory', async () => {
     try {
       if (fs.existsSync(FILE_PATH)) {
-        const data = fs.readFileSync(FILE_PATH, 'utf-8')
+        const data = await fsPromises.readFile(FILE_PATH, 'utf-8')
         return data ? JSON.parse(data) : []
       }
       return []

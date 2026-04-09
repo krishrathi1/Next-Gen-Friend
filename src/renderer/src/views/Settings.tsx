@@ -20,6 +20,7 @@ import {
   RiDatabase2Line,
   RiCheckLine
 } from 'react-icons/ri'
+import { useToastStore } from '@renderer/store/toast-store'
 
 interface SettingsProps {
   isSystemActive: boolean
@@ -63,12 +64,24 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
   const [savedPersonality, setSavedPersonality] = useState(false)
   const [savedUser, setSavedUser] = useState(false)
   const [savedPin, setSavedPin] = useState(false)
+  const addToast = useToastStore((s) => s.addToast)
 
   useEffect(() => {
     if (window.electron?.ipcRenderer) {
       window.electron.ipcRenderer.invoke('get-personality').then((res) => {
         if (res) setPersonality(res)
       })
+      window.electron.ipcRenderer
+        .invoke('secure-get-keys')
+        .then((keys) => {
+          if (!keys) return
+          if (typeof keys.geminiKey === 'string') setGeminiKey(keys.geminiKey)
+          if (typeof keys.groqKey === 'string') setGroqKey(keys.groqKey)
+          if (typeof keys.hfKey === 'string') setHfKey(keys.hfKey)
+          if (typeof keys.notionKey === 'string') setNotionKey(keys.notionKey)
+          if (typeof keys.tavilyKey === 'string') setTailvyKey(keys.tavilyKey)
+        })
+        .catch(() => {})
       window.electron.ipcRenderer
         .invoke('check-vault-status')
         .then((res) => setFaceCount(res?.faceCount || 0))
@@ -101,14 +114,15 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
   }
 
   const saveApiKeys = async () => {
-    localStorage.setItem('iris_custom_api_key', geminiKey)
-    localStorage.setItem('iris_groq_api_key', groqKey)
-    localStorage.setItem('iris_hf_api_key', hfKey)
-    localStorage.setItem('iris_notion_api_key', notionKey)
-    localStorage.setItem('iris_tailvy_api_key', tailvyKey)
     if (window.electron?.ipcRenderer) {
       try {
-        await window.electron.ipcRenderer.invoke('secure-save-keys', { groqKey, geminiKey })
+        await window.electron.ipcRenderer.invoke('secure-save-keys', {
+          groqKey,
+          geminiKey,
+          hfKey,
+          notionKey,
+          tavilyKey: tailvyKey
+        })
       } catch (e) {}
     }
     setSavedKeys(true)
@@ -167,7 +181,7 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
             stream.getTracks().forEach((t) => t.stop())
             setIsScanningFace(false)
             setFaceCount((prev) => prev + 1)
-            alert('New Biometric Identity Saved.')
+            addToast('New biometric identity saved.', 'success')
           }
         }, 1000)
       }
