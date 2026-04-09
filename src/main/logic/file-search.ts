@@ -148,7 +148,9 @@ export default function registerFileSearch(ipcMain: IpcMain) {
             file_name: path.basename(file),
             content_snippet: textChunk.substring(0, 200)
           })
-        } catch (e) {}
+        } catch (e: any) {
+          console.warn('[FileSearch] Skipping file during indexing:', file, e?.message || e)
+        }
       }
 
       event.sender.send('semantic-progress', {
@@ -205,7 +207,10 @@ export default function registerFileSearch(ipcMain: IpcMain) {
               results.map((r: any) => `- ${r.file_path}`).join('\n') +
               '\n\n'
           }
-        } catch (e) {}
+        } catch (e: any) {
+          semanticResultsText = ''
+          console.warn('[FileSearch] Semantic memory search failed:', e?.message || e)
+        }
       }
 
       const runNativeCrawler = async () => {

@@ -6,9 +6,10 @@ export default function registerRealityHacker(ipcMain: IpcMain) {
   ipcMain.removeHandler('hack-website')
   ipcMain.handle('hack-website', async (_, { url, mode, customText }) => {
     try {
-      if (hackerWindow) {
+      if (hackerWindow && !hackerWindow.isDestroyed()) {
         hackerWindow.close()
       }
+      hackerWindow = null
 
       hackerWindow = new BrowserWindow({
         width: 1400,
@@ -25,6 +26,9 @@ export default function registerRealityHacker(ipcMain: IpcMain) {
 
       await hackerWindow.loadURL(url)
       hackerWindow.show()
+      hackerWindow.on('closed', () => {
+        hackerWindow = null
+      })
 
       await new Promise((resolve) => setTimeout(resolve, 3000))
 

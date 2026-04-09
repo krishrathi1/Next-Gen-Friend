@@ -30,7 +30,9 @@ export default function registerAdbHandlers(ipcMain: IpcMain) {
       try {
         const file = await fs.readFile(historyPath, 'utf-8')
         history = JSON.parse(file)
-      } catch (e) {}
+      } catch (e) {
+        history = []
+      }
 
       const existingIndex = history.findIndex((d) => d.ip === ip)
       const deviceData = { ip, port, model, lastConnected: new Date().toISOString() }
@@ -41,7 +43,8 @@ export default function registerAdbHandlers(ipcMain: IpcMain) {
         history.push(deviceData)
       }
       await fs.writeFile(historyPath, JSON.stringify(history, null, 2))
-    } catch (e) {
+    } catch (e: any) {
+      console.warn('[ADB] Failed to save device history:', e?.message || e)
     }
   }
 
@@ -71,7 +74,12 @@ export default function registerAdbHandlers(ipcMain: IpcMain) {
             `${adbExec} -s ${ip}:${port} shell getprop ro.product.model`
           )
           await saveDeviceToHistory(ip, port, modelOut.trim().toUpperCase() || 'UNKNOWN DEVICE')
-        } catch (e) {}
+        } catch (e: any) {
+          return {
+            success: false,
+            error: `Connected, but failed to read device model: ${e?.message || String(e)}`
+          }
+        }
 
         return { success: true }
       }

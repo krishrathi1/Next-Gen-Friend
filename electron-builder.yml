@@ -1,4 +1,4 @@
-appId: com.boss.iris
+appId: com.krishrathi.irisai
 productName: IRIS AI
 directories:
   buildResources: build
@@ -58,12 +58,9 @@ linux:
     - AppImage
     - snap
     - deb
-  maintainer: Boss
+  maintainer: Krish Rathi <krishrathi877@gmail.com>
   category: Utility
 appImage:
   artifactName: ${name}-${version}.${ext}
 
 npmRebuild: false
-publish:
-  provider: generic
-  url: https://example.com/auto-updates
