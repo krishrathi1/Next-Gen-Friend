@@ -72,12 +72,12 @@ const MiniOverlay = ({
      * in Electron transparent windows on Windows (Chromium compositing bug).
      * Background is bg-zinc-950 (fully opaque) to compensate.
      */
-    <div className="mini-overlay-shell drag-region relative w-full h-full box-border flex items-center justify-between gap-1.5 px-2 bg-zinc-950 rounded-[999px] border border-white/[0.07] overflow-hidden">
+    <div className="mini-overlay-shell drag-region relative w-[min(96vw,420px)] h-[42px] mx-auto my-1 box-border flex items-center justify-between gap-1 px-1.5 bg-zinc-950 rounded-[999px] border border-white/[0.07] overflow-hidden">
 
       {/* ── Left — Status dot + audio bars ── */}
-      <div className="flex items-center gap-2 no-drag relative z-10">
+      <div className="flex items-center gap-1.5 no-drag relative z-10">
         <div
-          className={`w-7 h-7 rounded-full flex items-center justify-center border transition-all duration-100 ${
+          className={`w-6 h-6 rounded-full flex items-center justify-center border transition-all duration-100 ${
             isSystemActive
               ? isTalking
                 ? 'border-purple-500 bg-purple-500/15 shadow-[0_0_12px_rgba(139,92,246,0.5)] animate-pulse-ring'
@@ -86,14 +86,14 @@ const MiniOverlay = ({
           }`}
         >
           <div
-            className={`w-2 h-2 rounded-full transition-colors duration-100 ${
+            className={`w-1.5 h-1.5 rounded-full transition-colors duration-100 ${
               isSystemActive ? (isTalking ? 'bg-purple-300' : 'bg-purple-500') : 'bg-red-900'
             }`}
           />
         </div>
 
         {/* Audio level bars */}
-        <div className="flex items-end gap-px h-3.5">
+        <div className="flex items-end gap-px h-3">
           {[1, 2, 3, 4].map((bar) => (
             <span
               key={bar}
@@ -101,7 +101,7 @@ const MiniOverlay = ({
                 isSystemActive ? 'bg-purple-500/80' : 'bg-zinc-700'
               }`}
               style={{
-                height: isSystemActive ? `${4 + bar * (isTalking ? 2 : 1)}px` : '3px',
+                height: isSystemActive ? `${3 + bar * (isTalking ? 1.5 : 0.8)}px` : '2.5px',
                 opacity: isSystemActive ? 1 : 0.4
               }}
             />
@@ -110,13 +110,13 @@ const MiniOverlay = ({
       </div>
 
       {/* ── Center — Controls ── */}
-      <div className="flex items-center gap-1 no-drag relative z-10">
+      <div className="flex items-center gap-0.5 no-drag relative z-10">
         {/* Mic */}
         <button
           onClick={toggleMic}
           disabled={!isSystemActive}
           title={isMicMuted ? 'Unmute' : 'Mute'}
-          className={`p-1.5 rounded-full transition-all duration-100 hover:scale-105 active:scale-95 ${
+          className={`p-1 rounded-full transition-all duration-100 hover:scale-105 active:scale-95 ${
             !isSystemActive
               ? 'opacity-25'
               : isMicMuted
@@ -124,20 +124,20 @@ const MiniOverlay = ({
                 : 'text-purple-400 bg-purple-700/20'
           }`}
         >
-          {isMicMuted ? <RiMicOffLine size={14} /> : <RiMicLine size={14} />}
+          {isMicMuted ? <RiMicOffLine size={12} /> : <RiMicLine size={12} />}
         </button>
 
         {/* Power */}
         <button
           onClick={toggleSystem}
           title={isSystemActive ? 'Deactivate' : 'Activate'}
-          className={`p-1.5 rounded-full border transition-all duration-150 mx-0.5 hover:scale-105 active:scale-95 ${
+          className={`p-1 rounded-full border transition-all duration-150 mx-0.5 hover:scale-105 active:scale-95 ${
             isSystemActive
               ? 'bg-purple-700/25 border-purple-500/70 text-purple-300'
               : 'bg-zinc-800 border-zinc-600 text-zinc-500 hover:text-red-400 hover:border-red-500/40'
           }`}
         >
-          <GiPowerButton size={15} />
+          <GiPowerButton size={13} />
         </button>
 
         {/* Camera */}
@@ -145,7 +145,7 @@ const MiniOverlay = ({
           onClick={() => handleVisionClick('camera')}
           disabled={!isSystemActive}
           title="Toggle Camera"
-          className={`p-1.5 rounded-full transition-all duration-100 hover:scale-105 active:scale-95 ${
+          className={`p-1 rounded-full transition-all duration-100 hover:scale-105 active:scale-95 ${
             !isSystemActive
               ? 'opacity-25'
               : isVideoOn && visionMode === 'camera'
@@ -153,7 +153,7 @@ const MiniOverlay = ({
                 : 'text-zinc-400 hover:text-white hover:bg-white/[0.07]'
           }`}
         >
-          <RiCameraLine size={14} />
+          <RiCameraLine size={12} />
         </button>
 
         {/* Screen */}
@@ -161,7 +161,7 @@ const MiniOverlay = ({
           onClick={() => handleVisionClick('screen')}
           disabled={!isSystemActive}
           title="Toggle Screen"
-          className={`p-1.5 rounded-full transition-all duration-100 hover:scale-105 active:scale-95 ${
+          className={`p-1 rounded-full transition-all duration-100 hover:scale-105 active:scale-95 ${
             !isSystemActive
               ? 'opacity-25'
               : isVideoOn && visionMode === 'screen'
@@ -169,21 +169,21 @@ const MiniOverlay = ({
                 : 'text-zinc-400 hover:text-white hover:bg-white/[0.07]'
           }`}
         >
-          <RiComputerLine size={14} />
+          <RiComputerLine size={12} />
         </button>
       </div>
 
       {/* ── Right — Expand + Drag ── */}
-      <div className="pl-2 border-l border-purple-800/20 no-drag flex items-center gap-1 relative z-10">
+      <div className="pl-1.5 border-l border-purple-800/20 no-drag flex items-center gap-0.5 relative z-10">
         <button
           onClick={expand}
           title="Expand"
-          className="p-1.5 rounded-full text-purple-600 hover:text-purple-300 hover:bg-purple-800/15 transition-all duration-150 hover:scale-110 active:scale-95"
+          className="p-1 rounded-full text-purple-600 hover:text-purple-300 hover:bg-purple-800/15 transition-all duration-150 hover:scale-110 active:scale-95"
         >
-          <RiArrowUpSLine size={15} />
+          <RiArrowUpSLine size={13} />
         </button>
         <div className="drag-region cursor-move text-purple-800/35">
-          <RiDragMove2Fill size={12} />
+          <RiDragMove2Fill size={10} />
         </div>
       </div>
     </div>
