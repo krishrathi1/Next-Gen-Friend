@@ -20,6 +20,7 @@ import {
   RiDatabase2Line,
   RiCheckLine
 } from 'react-icons/ri'
+import { useToastStore } from '@renderer/store/toast-store'
 
 interface SettingsProps {
   isSystemActive: boolean
@@ -63,6 +64,7 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
   const [savedPersonality, setSavedPersonality] = useState(false)
   const [savedUser, setSavedUser] = useState(false)
   const [savedPin, setSavedPin] = useState(false)
+  const addToast = useToastStore((s) => s.addToast)
 
   useEffect(() => {
     if (window.electron?.ipcRenderer) {
@@ -179,7 +181,7 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
             stream.getTracks().forEach((t) => t.stop())
             setIsScanningFace(false)
             setFaceCount((prev) => prev + 1)
-            alert('New Biometric Identity Saved.')
+            addToast('New biometric identity saved.', 'success')
           }
         }, 1000)
       }

@@ -80,29 +80,20 @@ const CustomParticleSphere = ({ count = 3000 }) => {
     let timer: ReturnType<typeof setInterval> | null = null
     let disposed = false
 
-    const schedule = () => {
+    const poll = () => {
+      if (disposed) return
+      let avg = 0
+      if (irisService.analyser) {
+        irisService.analyser.getByteFrequencyData(dataArray)
+        avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length
+      }
+
+      invalidate()
       if (timer) clearInterval(timer)
-      timer = setInterval(() => {
-        if (disposed) return
-        let avg = 0
-        if (irisService.analyser) {
-          irisService.analyser.getByteFrequencyData(dataArray)
-          avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length
-        }
-        const active = avg > 3
-        invalidate()
-        // Higher refresh while audio-reactive, very low when idle.
-        if (active && timer) {
-          clearInterval(timer)
-          timer = setInterval(() => invalidate(), 33)
-        } else if (!active && timer) {
-          clearInterval(timer)
-          timer = setInterval(() => invalidate(), 250)
-        }
-      }, 250)
+      timer = setInterval(poll, avg > 3 ? 33 : 200)
     }
 
-    schedule()
+    timer = setInterval(poll, 200)
     return () => {
       disposed = true
       if (timer) clearInterval(timer)
@@ -118,7 +109,7 @@ const CustomParticleSphere = ({ count = 3000 }) => {
           count={positions.length / 3}
           array={positions}
           itemSize={3}
-          args={[positions, 30]}
+          args={[positions, 3]}
         />
       </bufferGeometry>
       <pointsMaterial

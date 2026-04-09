@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState, Suspense, lazy } from 'react'
+﻿import { memo, useEffect, useRef, useState, Suspense, lazy } from 'react'
 import {
   RiAppsLine,
   RiBatteryChargeLine,
@@ -16,7 +16,7 @@ import {
 } from 'react-icons/ri'
 import { getDrives, DriveInfo, getSystemStatus, SystemStats } from '@renderer/services/system-info'
 import { getHistory } from '@renderer/services/iris-ai-brain'
-import ViewSkeleton from '@renderer/components/ViewSkelrton'
+import ViewSkeleton from '@renderer/components/ViewSkeleton'
 
 import DashboardView from '../views/Dashboard'
 import PhoneView from '../views/Phone'
@@ -382,3 +382,4 @@ const ELI = (props: EliProps) => {
 }
 
 export default ELI
+

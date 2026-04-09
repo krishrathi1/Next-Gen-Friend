@@ -11,6 +11,7 @@ import {
 } from 'electron'
 import path, { join } from 'path'
 import fs from 'fs'
+import fsPromises from 'fs/promises'
 import os from 'os'
 import crypto from 'crypto'
 import http from 'http'
@@ -117,7 +118,6 @@ function createWindow(): void {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
       backgroundThrottling: false,
-      webSecurity: false
     }
   })
 
@@ -257,7 +257,7 @@ app.whenReady().then(() => {
         tavily: protect(tavilyKey)
       }
 
-      fs.writeFileSync(secureConfigPath, JSON.stringify(secureData))
+      await fsPromises.writeFile(secureConfigPath, JSON.stringify(secureData))
       return { success: true }
     } catch (error: any) {
       return { success: false, error: error.message }
@@ -268,7 +268,7 @@ app.whenReady().then(() => {
   ipcMain.handle('secure-get-keys', async () => {
     if (!fs.existsSync(secureConfigPath)) return null
     try {
-      const data = JSON.parse(fs.readFileSync(secureConfigPath, 'utf8'))
+      const data = JSON.parse(await fsPromises.readFile(secureConfigPath, 'utf8'))
       const unprotect = (value?: string) => {
         if (!value) return ''
         if (safeStorage.isEncryptionAvailable()) {

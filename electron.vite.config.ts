@@ -9,6 +9,20 @@ export default defineConfig({
   preload: {},
   renderer: {
     publicDir: resolve('src/renderer/src/public'),
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            three: ['three', '@react-three/fiber', '@react-three/drei'],
+            motion: ['framer-motion'],
+            flow: ['reactflow'],
+            map: ['leaflet', 'react-leaflet'],
+            charts: ['recharts'],
+            editor: ['@monaco-editor/react']
+          }
+        }
+      }
+    },
     resolve: {
       alias: {
         '@renderer': resolve('src/renderer/src')
@@ -17,4 +31,3 @@ export default defineConfig({
     plugins: [react(), tailwindcss()]
   }
 })
-

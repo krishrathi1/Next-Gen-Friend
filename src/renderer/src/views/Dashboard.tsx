@@ -20,6 +20,7 @@ import { HiComputerDesktop } from 'react-icons/hi2'
 import * as faceapi from 'face-api.js'
 import { VisionMode } from '@renderer/IndexRoot'
 import { DriveInfo, SystemStats } from '@renderer/services/system-info'
+import { ensureFaceModelsLoaded } from '@renderer/services/face-models'
 
 interface IrisProps {
   isSystemActive: boolean
@@ -65,24 +66,6 @@ type MetricCard = {
 
 const glassPanel =
   'bg-white/[0.02] backdrop-blur-3xl border border-white/[0.08] rounded-2xl shadow-xl transition-all duration-500'
-
-let faceModelsReady = false
-let faceModelsPromise: Promise<void> | null = null
-
-const ensureFaceModelsLoaded = async () => {
-  if (faceModelsReady) return
-  if (!faceModelsPromise) {
-    const MODEL_URL = '/models'
-    faceModelsPromise = Promise.all([
-      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-      faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
-      faceapi.nets.ageGenderNet.loadFromUri(MODEL_URL)
-    ]).then(() => {
-      faceModelsReady = true
-    })
-  }
-  await faceModelsPromise
-}
 
 const getMessageText = (msg: TranscriptMessage): string => {
   if (typeof msg.content === 'string' && msg.content.trim()) return msg.content

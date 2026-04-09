@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+﻿import { useState, useEffect, useRef } from 'react'
 import MiniOverlay from './components/MiniOverlay'
 import { irisService } from './services/Iris-voice-ai'
 import { getScreenSourceId } from './hooks/CaptureDesktop'
@@ -11,13 +11,30 @@ import WeatherWidget from './Widgets/WeatherWidget'
 import StockWidget from './Widgets/StockWidget'
 import LiveCodingWidget from './Widgets/LiveCodingWidget'
 import WormholeWidget from './Widgets/WormholeWidget'
-import OracleWidget from './Widgets/RagOrcaleWidget'
+import OracleWidget from './Widgets/RagOracleWidget'
 import ResearchWidget from './Widgets/DeepResearch'
-import SemanticWidget from './Widgets/SematicSearch'
+import SemanticWidget from './Widgets/SemanticSearch'
 import SmartDropZonesWidget from './Widgets/SmartZoneWidget'
 import TitleBar from './components/Titlebar'
+import ToastHost from './components/ToastHost'
+import { useToastStore } from './store/toast-store'
+import { ensureFaceModelsLoaded } from './services/face-models'
 
 export type VisionMode = 'camera' | 'screen' | 'none'
+
+type WidgetKey =
+  | 'smartzones'
+  | 'semantic'
+  | 'oracle'
+  | 'wormhole'
+  | 'map'
+  | 'stock'
+  | 'weather'
+  | 'image'
+  | 'email'
+  | 'terminal'
+  | 'livecoding'
+  | 'research'
 
 const IndexRoot = () => {
   const [isOverlay, setIsOverlay] = useState(false)
@@ -29,12 +46,15 @@ const IndexRoot = () => {
   const [isVideoOn, setIsVideoOn] = useState(false)
   const [visionMode, setVisionMode] = useState<VisionMode>('none')
   const [activeStream, setActiveStream] = useState<MediaStream | null>(null)
+  const [mountedWidgets, setMountedWidgets] = useState<Set<WidgetKey>>(new Set(['terminal']))
 
   const processingVideoRef = useRef<HTMLVideoElement>(document.createElement('video'))
   const activeStreamRef = useRef<MediaStream | null>(null)
   const aiIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const frameCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const wasOverlayRef = useRef(false)
+  const mountedWidgetsRef = useRef<Set<WidgetKey>>(new Set(['terminal']))
+  const addToast = useToastStore((s) => s.addToast)
 
   useEffect(() => {
     window.electron.ipcRenderer.on('overlay-mode', (_e, mode) => {
@@ -79,6 +99,52 @@ const IndexRoot = () => {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [isMicMuted])
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      ensureFaceModelsLoaded().catch(() => {})
+    }, 4000)
+    return () => clearTimeout(timer)
+  }, [])
+
+  useEffect(() => {
+    const mountWidgetFromEvent = (widget: WidgetKey, eventName: string) => (event: Event) => {
+      if (mountedWidgetsRef.current.has(widget)) return
+      mountedWidgetsRef.current.add(widget)
+      setMountedWidgets((prev) => new Set([...prev, widget]))
+
+      const custom = event as CustomEvent
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent(eventName, { detail: custom.detail }))
+      }, 0)
+    }
+
+    const eventMap: Array<{ name: string; widget: WidgetKey }> = [
+      { name: 'dropzone-start', widget: 'smartzones' },
+      { name: 'semantic-start', widget: 'semantic' },
+      { name: 'oracle-ingest-start', widget: 'oracle' },
+      { name: 'oracle-thinking', widget: 'oracle' },
+      { name: 'wormhole-opened', widget: 'wormhole' },
+      { name: 'map-update', widget: 'map' },
+      { name: 'map-route', widget: 'map' },
+      { name: 'show-stock', widget: 'stock' },
+      { name: 'show-weather', widget: 'weather' },
+      { name: 'image-gen', widget: 'image' },
+      { name: 'show-emails', widget: 'email' },
+      { name: 'ai-start-coding', widget: 'livecoding' },
+      { name: 'ai-open-vscode', widget: 'livecoding' },
+      { name: 'deep-research-start', widget: 'research' }
+    ]
+
+    const cleanups: Array<() => void> = []
+    eventMap.forEach(({ name, widget }) => {
+      const handler = mountWidgetFromEvent(widget, name)
+      window.addEventListener(name, handler)
+      cleanups.push(() => window.removeEventListener(name, handler))
+    })
+
+    return () => cleanups.forEach((fn) => fn())
+  }, [])
+
   const toggleSystem = async () => {
     if (!isSystemActive) {
       try {
@@ -88,11 +154,9 @@ const IndexRoot = () => {
         irisService.setMute(false)
       } catch (err: any) {
         if (err.message === 'NO_API_KEY') {
-          alert(
-            '⚠️ CRITICAL ERROR: Gemini API Key is missing. Please enter it in the Command Center Vault (Settings Tab).'
-          )
+          addToast('Critical error: Gemini API key missing. Add it in Settings > API Keys.', 'error')
         } else {
-          alert(`Connection failed: ${err.message}`)
+          addToast(`Connection failed: ${err.message}`, 'error')
         }
         setIsSystemActive(false)
       }
@@ -238,20 +302,22 @@ const IndexRoot = () => {
           isReentering={isReentering}
         />
       </div>
-      <SmartDropZonesWidget />
-      <SemanticWidget />
-      <OracleWidget />
-      <WormholeWidget />
-      <LeafletMapWidget />
-      <StockWidget />
-      <WeatherWidget />
-      <ImageWidget />
-      <EmailWidget />
-      <TerminalOverlay />
-      <LiveCodingWidget />
-      <ResearchWidget />
+      {mountedWidgets.has('smartzones') && <SmartDropZonesWidget />}
+      {mountedWidgets.has('semantic') && <SemanticWidget />}
+      {mountedWidgets.has('oracle') && <OracleWidget />}
+      {mountedWidgets.has('wormhole') && <WormholeWidget />}
+      {mountedWidgets.has('map') && <LeafletMapWidget />}
+      {mountedWidgets.has('stock') && <StockWidget />}
+      {mountedWidgets.has('weather') && <WeatherWidget />}
+      {mountedWidgets.has('image') && <ImageWidget />}
+      {mountedWidgets.has('email') && <EmailWidget />}
+      {mountedWidgets.has('terminal') && <TerminalOverlay />}
+      {mountedWidgets.has('livecoding') && <LiveCodingWidget />}
+      {mountedWidgets.has('research') && <ResearchWidget />}
+      <ToastHost />
     </div>
   )
 }
 
 export default IndexRoot
+
