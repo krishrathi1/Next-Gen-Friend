@@ -1,4 +1,4 @@
-import { IpcMain, app, shell, clipboard, screen } from 'electron'
+import { IpcMain, BrowserWindow, app, shell, clipboard, screen } from 'electron'
 import { keyboard, Key, mouse, Point, Button } from '@nut-tree-fork/nut-js'
 import screenshot from 'screenshot-desktop'
 import loudness from 'loudness'
@@ -85,7 +85,10 @@ function generateHumanPath(start: Point, end: Point): Point[] {
   return pathArray
 }
 
-export default function registerGhostControl(ipcMain: IpcMain) {
+export default function registerGhostControl(
+  ipcMain: IpcMain,
+  getMainWindow?: () => BrowserWindow | null
+) {
   ipcMain.handle('copy-file-to-clipboard', async (_event, filePath: string) => {
     return new Promise((resolve) => {
       const cmd = `powershell -command "Set-Clipboard -Path '${filePath}'"`
@@ -98,13 +101,25 @@ export default function registerGhostControl(ipcMain: IpcMain) {
   })
 
   ipcMain.handle('ghost-sequence', async (_event, actions: any[]) => {
+    const win = getMainWindow?.()
+    const wasFullScreen = win?.isFullScreen() ?? false
+    const wasVisible = win?.isVisible() ?? false
+
+    if (win) {
+      if (wasFullScreen) win.setFullScreen(false)
+      win.minimize()
+      await new Promise((r) => setTimeout(r, 500))
+    }
+
     try {
       for (const action of actions) {
         if (action.type === 'paste') {
           clipboard.writeText(action.text)
           await new Promise((r) => setTimeout(r, 200))
-          await keyboard.pressKey(Key.LeftControl, Key.V)
-          await keyboard.releaseKey(Key.V, Key.LeftControl)
+          await keyboard.pressKey(Key.LeftControl)
+          await keyboard.pressKey(Key.V)
+          await keyboard.releaseKey(Key.V)
+          await keyboard.releaseKey(Key.LeftControl)
         } else if (action.type === 'wait') {
           await new Promise((r) => setTimeout(r, action.ms || 500))
         } else if (action.type === 'type') {
@@ -127,11 +142,41 @@ export default function registerGhostControl(ipcMain: IpcMain) {
           }
         } else if (action.type === 'click') {
           await mouse.leftClick()
+        } else if (action.type === 'focus-window') {
+          await new Promise<void>((resolve) => {
+            const title = (action.title || '').replace(/'/g, "\\'")
+            exec(
+              `powershell -Command "(New-Object -ComObject WScript.Shell).AppActivate('${title}')"`,
+              () => resolve()
+            )
+          })
+          await new Promise((r) => setTimeout(r, 700))
+        } else if (action.type === 'click-at-relative') {
+          const primaryDisplay = screen.getPrimaryDisplay()
+          const { width, height } = primaryDisplay.size
+          const scaleFactor = primaryDisplay.scaleFactor
+          const x = Math.round(((action.x ?? 50) / 100) * width * scaleFactor)
+          const y = Math.round(((action.y ?? 50) / 100) * height * scaleFactor)
+          const logicalX = Math.round(x / scaleFactor)
+          const logicalY = Math.round(y / scaleFactor)
+          await mouse.move([new Point(logicalX, logicalY)])
+          await mouse.leftClick()
+          await new Promise((r) => setTimeout(r, 200))
         }
       }
       return true
     } catch (e) {
       return false
+    } finally {
+      if (win && wasVisible) {
+        await new Promise((r) => setTimeout(r, 300))
+        if (wasFullScreen) {
+          win.setFullScreen(true)
+        } else {
+          win.restore()
+          win.show()
+        }
+      }
     }
   })
 

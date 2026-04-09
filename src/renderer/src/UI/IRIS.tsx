@@ -271,13 +271,11 @@ const ELI = (props: EliProps) => {
           </div>
         )}
 
-        {activeTab === 'PHONE' && (
-          <div className="absolute inset-0 overflow-y-auto scrollbar-small">
-            <div className="h-full">
-              <PhoneView glassPanel={glassPanel} />
-            </div>
+        <div className={`absolute inset-0 overflow-y-auto scrollbar-small ${activeTab === 'PHONE' ? 'block' : 'hidden'}`}>
+          <div className="h-full">
+            <PhoneView glassPanel={glassPanel} />
           </div>
-        )}
+        </div>
 
         <Suspense fallback={<ViewSkeleton />}>
           {activeTab === 'Macros' && (

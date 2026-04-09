@@ -38,6 +38,7 @@ import { closeApp, openApp, performWebSearch } from '@renderer/functions/apps-ma
 import { readSystemNotes, saveNote } from '@renderer/functions/notes-manager-api'
 import { executeGhostSequence, ghostType } from '@renderer/functions/keyboard-manger-api'
 import {
+  sendMessageOnApp,
   scheduleWhatsAppMessage,
   sendWhatsAppMessage
 } from '@renderer/functions/whatsapp-manager-api'
@@ -200,7 +201,8 @@ You are capable of complex, multi-step workflows. If the user gives a complex co
   2. Once you have the info, call 'send_whatsapp' with the content.
 
 ## 🎯 TOOL PROTOCOLS
-- **send_whatsapp:** Use this for ANY messaging request.
+  - **send_app_message:** Use this for ANY messaging request on desktop apps.
+  - **send_whatsapp:** Use this when the user explicitly asks for WhatsApp.
 - **ghost_type:** Use for typing into any active window.
 
 ## 🗣️ LANGUAGE PROTOCOLS
@@ -502,6 +504,27 @@ ${JSON.stringify(history)}
                       json_actions: { type: 'STRING' }
                     },
                     required: ['json_actions']
+                  }
+                },
+                {
+                  name: 'send_app_message',
+                  description:
+                    'Send a message on a desktop messaging app (WhatsApp, Telegram, Discord, Slack, Teams). Supports optional file/image attachment by absolute file path.',
+                  parameters: {
+                    type: 'OBJECT',
+                    properties: {
+                      app_name: {
+                        type: 'STRING',
+                        description: 'Messaging app name like WhatsApp, Telegram, Discord, Slack, Teams.'
+                      },
+                      recipient: { type: 'STRING', description: 'Contact, user, or chat name.' },
+                      message: { type: 'STRING', description: 'Message text or caption.' },
+                      file_path: {
+                        type: 'STRING',
+                        description: 'Optional: Full absolute path to file/image to attach.'
+                      }
+                    },
+                    required: ['app_name', 'recipient', 'message']
                   }
                 },
                 {
@@ -1346,6 +1369,13 @@ ${JSON.stringify(history)}
                 call.args.message,
                 call.args.file_path
               )
+            } else if (call.name === 'send_app_message') {
+              result = await sendMessageOnApp(
+                call.args.app_name,
+                call.args.recipient,
+                call.args.message,
+                call.args.file_path
+              )
             } else if (call.name === 'schedule_whatsapp') {
               result = await scheduleWhatsAppMessage(
                 call.args.name,
@@ -1492,6 +1522,13 @@ ${JSON.stringify(history)}
                     } else if (step.tool === 'send_whatsapp') {
                       await sendWhatsAppMessage(
                         step.args.name,
+                        step.args.message,
+                        step.args.file_path
+                      )
+                    } else if (step.tool === 'send_app_message') {
+                      await sendMessageOnApp(
+                        step.args.app_name,
+                        step.args.recipient,
                         step.args.message,
                         step.args.file_path
                       )

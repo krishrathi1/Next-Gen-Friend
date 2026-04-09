@@ -349,7 +349,7 @@ app.whenReady().then(() => {
   registerGmailHandlers(ipcMain)
   registerGalleryHandlers(ipcMain)
   registerterminalControl(ipcMain)
-  registerGhostControl(ipcMain)
+  registerGhostControl(ipcMain, () => mainWindow)
   registerWebAgent(ipcMain)
   registerNotesHandlers(ipcMain)
   registerAppLauncher(ipcMain)

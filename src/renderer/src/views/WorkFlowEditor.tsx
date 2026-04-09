@@ -38,7 +38,11 @@ import {
   takeScreenshot
 } from '@renderer/functions/keybaord-manager'
 import { closeApp, openApp, performWebSearch } from '@renderer/functions/apps-manager-api'
-import { scheduleWhatsAppMessage, sendWhatsAppMessage } from '@renderer/functions/whatsapp-manager-api'
+import {
+  scheduleWhatsAppMessage,
+  sendMessageOnApp,
+  sendWhatsAppMessage
+} from '@renderer/functions/whatsapp-manager-api'
 import { runTerminal } from '@renderer/functions/coding-manager-api'
 import { draftEmail, readEmails, sendEmail } from '@renderer/functions/gmail-manager-api'
 
@@ -70,6 +74,18 @@ const CATEGORIZED_TOOLS = {
     { name: 'draft_email', description: 'Create an email draft.', parameters: { properties: { to: { type: 'STRING' }, subject: { type: 'STRING' }, body: { type: 'STRING' } } } }
   ],
   MOBILE_LINK: [
+    {
+      name: 'send_app_message',
+      description: 'Send message/file in desktop messaging app (WhatsApp/Telegram/Discord/Slack/Teams).',
+      parameters: {
+        properties: {
+          app_name: { type: 'STRING' },
+          recipient: { type: 'STRING' },
+          message: { type: 'STRING' },
+          file_path: { type: 'STRING', description: 'Optional' }
+        }
+      }
+    },
     { name: 'open_mobile_app', description: 'Requires Android package name.', parameters: { properties: { package_name: { type: 'STRING' } } } },
     { name: 'toggle_mobile_hardware', description: 'Toggle Wifi/Bluetooth.', parameters: { properties: { setting: { type: 'STRING' }, state: { type: 'BOOLEAN' } } } },
     { name: 'send_whatsapp', description: 'Send instant message.', parameters: { properties: { name: { type: 'STRING' }, message: { type: 'STRING' }, file_path: { type: 'STRING', description: 'Optional' } } } },
@@ -236,6 +252,13 @@ function Editor() {
           await closeApp(step.args.app_name)
         } else if (step.tool === 'send_whatsapp') {
           await sendWhatsAppMessage(step.args.name, step.args.message, step.args.file_path)
+        } else if (step.tool === 'send_app_message') {
+          await sendMessageOnApp(
+            step.args.app_name,
+            step.args.recipient,
+            step.args.message,
+            step.args.file_path
+          )
         } else if (step.tool === 'schedule_whatsapp') {
           await scheduleWhatsAppMessage(step.args.name, step.args.message, Number(step.args.delay_minutes), step.args.file_path)
         } else if (step.tool === 'google_search') {

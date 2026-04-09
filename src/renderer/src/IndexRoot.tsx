@@ -39,6 +39,7 @@ const IndexRoot = () => {
   useEffect(() => {
     window.electron.ipcRenderer.on('overlay-mode', (_e, mode) => {
       setIsOverlay(mode)
+      document.documentElement.classList.toggle('overlay-mode', mode)
       if (wasOverlayRef.current && !mode) {
         setIsReentering(true)
         setTimeout(() => setIsReentering(false), 900)
