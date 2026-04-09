@@ -1,4 +1,4 @@
-import { IpcMain } from 'electron'
+import { BrowserWindow, IpcMain } from 'electron'
 import os from 'os'
 import { exec } from 'child_process'
 
@@ -96,6 +96,7 @@ let currentSystemStats = {
   temperature: null as number | null,
   uptime: '0h'
 }
+let getMainWindowRef: (() => BrowserWindow | null) | undefined
 
 // Low latency CPU monitoring (runs frequently)
 const startCpuMonitor = () => {
@@ -109,6 +110,20 @@ const startCpuMonitor = () => {
       usedPercentage: (((totalMem - freeMem) / totalMem) * 100).toFixed(1)
     }
     currentSystemStats.uptime = (os.uptime() / 3600).toFixed(1) + 'h'
+
+    const target = getMainWindowRef?.()
+    if (target && !target.isDestroyed()) {
+      target.webContents.send('stats-push', {
+        cpu: currentSystemStats.cpu,
+        gpu: currentSystemStats.gpu,
+        memory: currentSystemStats.memory,
+        temperature: currentSystemStats.temperature,
+        os: {
+          type: 'Windows 11',
+          uptime: currentSystemStats.uptime
+        }
+      })
+    }
   }, 1000)
 }
 
@@ -124,7 +139,11 @@ const startHeavyMonitor = async () => {
   }
 }
 
-export default function registerSystemHandlers(ipcMain: IpcMain) {
+export default function registerSystemHandlers(
+  ipcMain: IpcMain,
+  options?: { getMainWindow?: () => BrowserWindow | null }
+) {
+  getMainWindowRef = options?.getMainWindow
   startCpuMonitor()
   startHeavyMonitor()
 

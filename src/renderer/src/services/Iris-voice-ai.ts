@@ -77,6 +77,11 @@ const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, fallback: 
 }
 
 const bytesToBase64 = (bytes: Uint8Array): string => {
+  const nodeBuffer = (globalThis as any).Buffer
+  if (nodeBuffer && typeof nodeBuffer.from === 'function') {
+    return nodeBuffer.from(bytes).toString('base64')
+  }
+
   const chunkSize = 0x8000
   let binary = ''
   for (let i = 0; i < bytes.length; i += chunkSize) {
@@ -85,6 +90,8 @@ const bytesToBase64 = (bytes: Uint8Array): string => {
   }
   return btoa(binary)
 }
+
+let cachedWorkletUrl: string | null = null
 
 export class GeminiLiveService {
   public socket: WebSocket | null = null
@@ -247,21 +254,42 @@ ${JSON.stringify(history)}
     this.analyser.smoothingTimeConstant = 0.5
     this.analyser.connect(this.audioContext.destination)
 
-    const audioWorkletCode = `
-      class PCMProcessor extends AudioWorkletProcessor {
-        process(inputs, outputs, parameters) {
-          const input = inputs[0];
-          if (input.length > 0) {
-            this.port.postMessage(input[0]);
+    if (!cachedWorkletUrl) {
+      const audioWorkletCode = `
+        class PCMProcessor extends AudioWorkletProcessor {
+          constructor() {
+            super();
+            this._chunks = [];
+            this._size = 0;
+            this._targetSize = 1600; // ~100ms at 16kHz
           }
-          return true;
+          process(inputs) {
+            const input = inputs[0];
+            if (input.length > 0 && input[0].length > 0) {
+              const chunk = new Float32Array(input[0]);
+              this._chunks.push(chunk);
+              this._size += chunk.length;
+              if (this._size >= this._targetSize) {
+                const merged = new Float32Array(this._size);
+                let offset = 0;
+                for (const c of this._chunks) {
+                  merged.set(c, offset);
+                  offset += c.length;
+                }
+                this.port.postMessage(merged);
+                this._chunks = [];
+                this._size = 0;
+              }
+            }
+            return true;
+          }
         }
-      }
-      registerProcessor('pcm-processor', PCMProcessor);
-    `
-    const blob = new Blob([audioWorkletCode], { type: 'application/javascript' })
-    const workletUrl = URL.createObjectURL(blob)
-    await this.audioContext.audioWorklet.addModule(workletUrl)
+        registerProcessor('pcm-processor', PCMProcessor);
+      `
+      const blob = new Blob([audioWorkletCode], { type: 'application/javascript' })
+      cachedWorkletUrl = URL.createObjectURL(blob)
+    }
+    await this.audioContext.audioWorklet.addModule(cachedWorkletUrl)
 
     const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${this.apiKey}`
     this.socket = new WebSocket(url)
@@ -1602,7 +1630,7 @@ ${JSON.stringify(history)}
 
         if (serverContent) {
           if (serverContent.interrupted && this.audioContext) {
-            this.nextStartTime = this.audioContext.currentTime + 0.02
+            this.nextStartTime = this.audioContext.currentTime + 0.05
           }
 
           if (serverContent.modelTurn?.parts) {
@@ -1623,12 +1651,12 @@ ${JSON.stringify(history)}
 
           if (serverContent.turnComplete || serverContent.interrupted) {
             if (this.userInputBuffer.trim()) {
-              await saveMessage('user', this.userInputBuffer.trim())
+              saveMessage('user', this.userInputBuffer.trim()).catch(() => {})
               this.userInputBuffer = ''
             }
 
             if (this.aiResponseBuffer.trim()) {
-              await saveMessage('iris', this.aiResponseBuffer.trim())
+              saveMessage('iris', this.aiResponseBuffer.trim()).catch(() => {})
               this.aiResponseBuffer = ''
             }
           }

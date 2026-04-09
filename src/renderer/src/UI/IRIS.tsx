@@ -82,14 +82,12 @@ const ELI = (props: EliProps) => {
   const lastHistorySigRef = useRef('')
 
   const isDashboardActive = activeTab === 'DASHBOARD'
+  const appendPoint = (series: number[], value: number) => [...series.slice(-44), value]
 
   useEffect(() => {
     if (!isDashboardActive) return
 
-    const appendPoint = (series: number[], value: number) => [...series.slice(-44), value]
-
-    const pollStats = async () => {
-      const nextStats = await getSystemStatus()
+    const applyStats = (nextStats: SystemStats | null) => {
       setStats(nextStats)
       if (nextStats) {
         const cpu = Number(nextStats.cpu)
@@ -103,20 +101,29 @@ const ELI = (props: EliProps) => {
       }
     }
 
+    const bootstrapStats = async () => {
+      const nextStats = await getSystemStatus()
+      applyStats(nextStats)
+    }
+
+    const onStatsPush = (_event: unknown, pushed: SystemStats) => {
+      applyStats(pushed)
+    }
+
     const pollDrives = async () => {
       const next = await getDrives()
       setDrives(Array.isArray(next) ? next : [])
     }
 
-    const statsTimer = setInterval(pollStats, 1000)
     const drivesTimer = setInterval(pollDrives, 15000)
 
-    pollStats()
+    bootstrapStats()
     pollDrives()
+    window.electron.ipcRenderer.on('stats-push', onStatsPush)
 
     return () => {
-      clearInterval(statsTimer)
       clearInterval(drivesTimer)
+      window.electron.ipcRenderer.removeListener('stats-push', onStatsPush)
     }
   }, [isDashboardActive])
 

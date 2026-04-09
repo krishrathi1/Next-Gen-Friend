@@ -76,9 +76,9 @@ let pendingOAuthUrl: string | null = null
 let oauthCallbackServer: http.Server | null = null
 
 const secureConfigPath = join(app.getPath('userData'), 'iris_secure_vault.json')
-const OVERLAY_WIDTH = 720
-const OVERLAY_HEIGHT = 106
-const OVERLAY_BOTTOM_OFFSET = 40
+const OVERLAY_WIDTH = 620
+const OVERLAY_HEIGHT = 88
+const OVERLAY_BOTTOM_OFFSET = 34
 
 function extractIrisUrl(argv: string[]): string | null {
   return argv.find((arg) => typeof arg === 'string' && arg.startsWith('iris://')) || null
@@ -365,7 +365,7 @@ app.whenReady().then(() => {
   registerFileWrite(ipcMain)
   registerFileOps(ipcMain)
   registerFileScanner(ipcMain)
-  registerSystemHandlers(ipcMain)
+  registerSystemHandlers(ipcMain, { getMainWindow: () => mainWindow })
   registerIpcHandlers({ ipcMain, app, getMainWindow: () => mainWindow })
 
   ipcMain.handle('get-screen-source', async () => {
