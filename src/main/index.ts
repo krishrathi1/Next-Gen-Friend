@@ -77,8 +77,8 @@ let pendingOAuthUrl: string | null = null
 let oauthCallbackServer: http.Server | null = null
 
 const secureConfigPath = join(app.getPath('userData'), 'iris_secure_vault.json')
-const OVERLAY_WIDTH = 620
-const OVERLAY_HEIGHT = 88
+const OVERLAY_WIDTH = 490
+const OVERLAY_HEIGHT = 64
 const OVERLAY_BOTTOM_OFFSET = 34
 
 function extractIrisUrl(argv: string[]): string | null {
