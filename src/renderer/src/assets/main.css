@@ -162,6 +162,35 @@ a {
   100% { transform: translateX(130%)  translateZ(0); }
 }
 
+@keyframes overlay-edge-breathe {
+  0%,
+  100% {
+    box-shadow:
+      0 10px 26px rgba(0, 0, 0, 0.42),
+      0 0 0 1px rgba(168, 85, 247, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+  50% {
+    box-shadow:
+      0 12px 30px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(168, 85, 247, 0.24),
+      0 0 24px rgba(168, 85, 247, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+}
+
+@keyframes overlay-core-glow {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scaleX(1) translateZ(0);
+  }
+  50% {
+    opacity: 0.32;
+    transform: scaleX(1.04) translateZ(0);
+  }
+}
+
 @keyframes reentry-pop {
   0%   { opacity: 0.88; transform: scale(0.994) translateZ(0); }
   100% { opacity: 1;    transform: scale(1)     translateZ(0); }
@@ -186,18 +215,50 @@ a {
 }
 
 .mini-overlay-shell {
-  animation: overlay-enter 0.1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: overlay-enter 0.16s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+  isolation: isolate;
 }
 
 .mini-overlay-sweep::before {
   content: '';
   position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 44%;
-  background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.2), transparent);
-  filter: blur(1px);
-  animation: overlay-sweep 2.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  top: -25%;
+  bottom: -25%;
+  width: 36%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(125, 211, 252, 0.05) 24%,
+    rgba(167, 139, 250, 0.26) 50%,
+    rgba(196, 181, 253, 0.05) 74%,
+    transparent 100%
+  );
+  filter: blur(0.6px);
+  opacity: 0.85;
+  pointer-events: none;
+  animation: overlay-sweep 3.1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.mini-overlay-attention {
+  animation: overlay-edge-breathe 2.6s ease-in-out infinite;
+}
+
+.mini-overlay-attention::after {
+  content: '';
+  position: absolute;
+  inset: 18% 24%;
+  border-radius: 999px;
+  background: radial-gradient(
+    circle,
+    rgba(168, 85, 247, 0.3) 0%,
+    rgba(45, 212, 191, 0.12) 42%,
+    transparent 76%
+  );
+  filter: blur(16px);
+  pointer-events: none;
+  z-index: 0;
+  animation: overlay-core-glow 3.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 .reentry-shell-fx {
@@ -374,4 +435,3 @@ button:active {
 [class*='popup'] {
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
-

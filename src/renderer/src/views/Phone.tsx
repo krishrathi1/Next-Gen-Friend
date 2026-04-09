@@ -21,6 +21,13 @@ import {
   RiCloseLine
 } from 'react-icons/ri'
 
+type DeviceHistoryEntry = {
+  ip: string
+  port: string
+  model?: string
+  lastConnected?: string
+}
+
 const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
   const [ip, setIp] = useState(() => localStorage.getItem('iris_adb_ip') || '')
   const [port, setPort] = useState(() => localStorage.getItem('iris_adb_port') || '5555')
@@ -33,7 +40,10 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
   >(null)
   const [screenExpanded, setScreenExpanded] = useState(false)
   const [isScreenPaused, setIsScreenPaused] = useState(false)
-  const [deviceHistory, setDeviceHistory] = useState<any[]>([])
+  const [deviceHistory, setDeviceHistory] = useState<DeviceHistoryEntry[]>([])
+  const [selectedDeviceModel, setSelectedDeviceModel] = useState('UNKNOWN DEVICE')
+  const [lastTelemetryAt, setLastTelemetryAt] = useState<number | null>(null)
+  const [nowTick, setNowTick] = useState(() => Date.now())
 
   const screenRef = useRef<HTMLImageElement>(null)
   const isStreaming = useRef(false)
@@ -57,14 +67,15 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
 
   useEffect(() => {
     window.electron.ipcRenderer.invoke('adb-get-history').then((data) => {
-      setDeviceHistory(data)
-      if (data.length > 0 && !hasAutoConnected.current) {
+      const safeHistory = Array.isArray(data) ? (data as DeviceHistoryEntry[]) : []
+      setDeviceHistory(safeHistory)
+      if (safeHistory.length > 0 && !hasAutoConnected.current) {
         hasAutoConnected.current = true
-        const lastDevice = data[data.length - 1]
+        const lastDevice = safeHistory[safeHistory.length - 1]
         if (lastDevice && lastDevice.ip) {
           setIp(lastDevice.ip)
-          setPort(lastDevice.port)
-          connectToDevice(lastDevice.ip, lastDevice.port)
+          setPort(String(lastDevice.port))
+          connectToDevice(lastDevice.ip, String(lastDevice.port), lastDevice.model)
         }
       }
     })
@@ -92,17 +103,30 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
     } catch (e) {}
   }
 
-  const connectToDevice = async (targetIp: string, targetPort: string) => {
-    if (!targetIp || !targetPort) return setErrorMsg('IP and Port are required.')
+  const connectToDevice = async (targetIp: string, targetPort: string, modelHint?: string) => {
+    const normalizedIp = targetIp.trim()
+    const normalizedPort = String(targetPort || '').trim()
+    if (!normalizedIp || !normalizedPort) return setErrorMsg('IP and Port are required.')
+    setIp(normalizedIp)
+    setPort(normalizedPort)
+    localStorage.setItem('iris_adb_ip', normalizedIp)
+    localStorage.setItem('iris_adb_port', normalizedPort)
+    if (modelHint && modelHint.trim()) {
+      setSelectedDeviceModel(modelHint.trim().toUpperCase())
+    }
     setStatus('connecting')
     setErrorMsg('')
     try {
-      const res = await window.electron.ipcRenderer.invoke('adb-connect', { ip: targetIp, port: targetPort })
+      const res = await window.electron.ipcRenderer.invoke('adb-connect', {
+        ip: normalizedIp,
+        port: normalizedPort
+      })
       if (res.success) {
         setStatus('connected')
         setUiMessage('Device connected successfully.')
         isStreaming.current = true
-        fetchTelemetry()
+        setNowTick(Date.now())
+        await fetchTelemetry()
         startScreenStream()
       } else {
         setStatus('idle')
@@ -115,8 +139,6 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
   }
 
   const handleManualConnect = () => {
-    localStorage.setItem('iris_adb_ip', ip)
-    localStorage.setItem('iris_adb_port', port)
     connectToDevice(ip, port)
   }
 
@@ -131,6 +153,7 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
     } catch (e) {}
     setStatus('idle')
     setUiMessage('Disconnected.')
+    setLastTelemetryAt(null)
     if (screenRef.current) screenRef.current.src = ''
   }
 
@@ -149,7 +172,14 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
   const fetchTelemetry = async () => {
     try {
       const res = await window.electron.ipcRenderer.invoke('adb-telemetry')
-      if (res.success) setTelemetry(res.data)
+      if (res.success && res.data) {
+        setTelemetry(res.data)
+        setLastTelemetryAt(Date.now())
+        setNowTick(Date.now())
+        if (typeof res.data.model === 'string' && res.data.model.trim()) {
+          setSelectedDeviceModel(res.data.model.trim().toUpperCase())
+        }
+      }
     } catch (e) {}
   }
 
@@ -182,6 +212,12 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
       }, 3000)
     }
     return () => clearInterval(interval)
+  }, [status])
+
+  useEffect(() => {
+    if (status !== 'connected') return
+    const heartbeat = setInterval(() => setNowTick(Date.now()), 1000)
+    return () => clearInterval(heartbeat)
   }, [status])
 
   useEffect(() => {
@@ -219,6 +255,13 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
     }
   }
 
+  const liveModel =
+    telemetry.model && telemetry.model !== 'UNKNOWN DEVICE' ? telemetry.model : selectedDeviceModel
+  const thermal = Number(telemetry.battery.temp)
+  const thermalText = Number.isFinite(thermal) ? `${thermal.toFixed(1)}degC` : 'N/A'
+  const telemetryAgeLabel =
+    lastTelemetryAt == null ? 'awaiting sync' : `${Math.max(0, Math.floor((nowTick - lastTelemetryAt) / 1000))}s ago`
+
   /* â”€â”€ DEVICE HISTORY VIEW â”€â”€ */
   if (status !== 'connected' && uiMode === 'history') {
     return (
@@ -240,7 +283,7 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
             {deviceHistory.map((dev, i) => (
               <button
                 key={i}
-                onClick={() => connectToDevice(dev.ip, dev.port)}
+                onClick={() => connectToDevice(dev.ip, String(dev.port), dev.model)}
                 className="w-52 h-[420px] bg-[#0a0a0f] border-[6px] border-[#1a1a22] hover:border-violet-800/40 rounded-[2.8rem] relative flex flex-col p-1.5 group transition-all duration-400 shadow-2xl hover:shadow-[0_0_48px_rgba(124,58,237,0.15)]"
               >
                 {/* Notch */}
@@ -259,7 +302,7 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
                     <RiWifiLine size={10} /> {dev.ip}:{dev.port}
                   </div>
                   <div className="mt-7 px-6 py-2 border border-zinc-700/60 group-hover:border-violet-500/50 group-hover:bg-violet-600 text-zinc-500 group-hover:text-white font-semibold text-[10px] tracking-widest rounded-full transition-all duration-300 z-10">
-                    {status === 'connecting' && ip === dev.ip ? 'LINKING...' : 'CONNECT'}
+                    {status === 'connecting' && ip === dev.ip && port === String(dev.port) ? 'LINKING...' : 'CONNECT'}
                   </div>
                 </div>
               </button>
@@ -387,6 +430,10 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
         <div className="relative overflow-hidden rounded-[2rem] border border-white/[0.08] bg-gradient-to-br from-[#151528] via-[#111425] to-[#090c16] p-5 shadow-[0_16px_40px_rgba(0,0,0,0.45)]">
           <div className="absolute -top-10 -left-10 h-36 w-36 rounded-full bg-violet-500/20 blur-[55px] pointer-events-none" />
           <div className="absolute -top-8 -right-10 h-32 w-32 rounded-full bg-cyan-500/15 blur-[50px] pointer-events-none" />
+          <div
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.06] to-transparent -translate-x-full pointer-events-none"
+            style={{ animation: 'shimmer 4.2s linear infinite' }}
+          />
 
           <div className="relative z-10 flex items-start justify-between gap-3">
             <div className="flex items-center gap-3.5 min-w-0">
@@ -394,8 +441,11 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
                 <RiSmartphoneLine className="text-violet-200" size={25} />
               </div>
               <div className="min-w-0">
-                <h2 className="truncate text-[17px] font-black tracking-wide text-white">{telemetry.model}</h2>
+                <h2 className="truncate text-[17px] font-black tracking-wide text-white">{liveModel}</h2>
                 <p className="mt-1 text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-400">{telemetry.os}</p>
+                <p className="mt-1 text-[9px] font-mono uppercase tracking-[0.2em] text-cyan-300/70">
+                  Sync {telemetryAgeLabel}
+                </p>
               </div>
             </div>
 
@@ -405,6 +455,15 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-300" />
               </span>
               LIVE
+              <span className="ml-1 flex items-end gap-[2px]">
+                {[0, 1, 2].map((bar) => (
+                  <span
+                    key={bar}
+                    className="w-[2px] rounded-full bg-emerald-300/80 animate-pulse"
+                    style={{ height: `${5 + bar * 2}px`, animationDelay: `${bar * 0.18}s` }}
+                  />
+                ))}
+              </span>
             </span>
           </div>
 
@@ -414,10 +473,13 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
             <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/[0.06] px-3 py-2.5">
               <span className="block text-[8px] font-mono tracking-[0.24em] text-zinc-500">STATUS</span>
               <span className="mt-1 block text-[12px] font-black tracking-[0.14em] text-emerald-300">LIVE UPLINK</span>
+              <span className="mt-1 block text-[9px] font-mono tracking-[0.12em] text-emerald-200/75">
+                {ip}:{port}
+              </span>
             </div>
             <div className="rounded-xl border border-amber-400/20 bg-amber-400/[0.06] px-3 py-2.5 text-right">
               <span className="block text-[8px] font-mono tracking-[0.24em] text-zinc-500">THERMAL</span>
-              <span className="mt-1 block text-[12px] font-black tracking-[0.08em] text-amber-300">{telemetry.battery.temp}degC</span>
+              <span className="mt-1 block text-[12px] font-black tracking-[0.08em] text-amber-300">{thermalText}</span>
             </div>
           </div>
         </div>
@@ -428,7 +490,7 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
             label: 'NETWORK',
             icon: <RiSignalWifi3Line className="text-violet-300 group-hover:text-violet-200 transition-colors" size={22} />,
             value: 'ACTIVE',
-            sub: 'TCP/IP BRIDGE',
+            sub: `${ip}:${port}`,
             bar: null,
             glow: 'bg-violet-500/10 group-hover:bg-violet-500/25',
             iconBg: 'bg-violet-500/10 border-violet-500/20'
@@ -626,4 +688,3 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
 }
 
 export default memo(PhoneView)
-
