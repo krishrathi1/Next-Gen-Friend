@@ -138,6 +138,11 @@ const ELI = (props: EliProps) => {
       applyStats(pushed)
     }
 
+    const bootstrapStats = async () => {
+      const nextStats = await getSystemStatus()
+      applyStats(nextStats)
+    }
+
     const pollDrives = async () => {
       const next = await getDrives()
       setDrives(Array.isArray(next) ? next : [])
