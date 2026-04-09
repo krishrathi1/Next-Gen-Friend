@@ -72,7 +72,7 @@ const MiniOverlay = ({
      * in Electron transparent windows on Windows (Chromium compositing bug).
      * Background is bg-zinc-950 (fully opaque) to compensate.
      */
-    <div className="mini-overlay-shell mini-overlay-sweep mini-overlay-attention drag-region relative w-full h-full box-border flex items-center justify-between gap-2 px-2.5 bg-zinc-950 rounded-[999px] border border-white/[0.07] overflow-hidden">
+    <div className="mini-overlay-shell drag-region relative w-full h-full box-border flex items-center justify-between gap-2 px-2.5 bg-zinc-950 rounded-[999px] border border-white/[0.07] overflow-hidden">
 
       {/* ── Left — Status dot + audio bars ── */}
       <div className="flex items-center gap-2 no-drag relative z-10">

@@ -268,7 +268,7 @@ const IndexRoot = () => {
 
   if (isOverlay) {
     return (
-      <div className="w-screen h-screen m-0 p-0 bg-transparent overflow-hidden">
+      <div className="w-full h-full m-0 p-0 bg-transparent overflow-hidden">
         <MiniOverlay
           isSystemActive={isSystemActive}
           toggleSystem={toggleSystem}
