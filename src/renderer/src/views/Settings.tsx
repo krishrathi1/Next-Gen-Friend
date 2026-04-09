@@ -70,6 +70,17 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
         if (res) setPersonality(res)
       })
       window.electron.ipcRenderer
+        .invoke('secure-get-keys')
+        .then((keys) => {
+          if (!keys) return
+          if (typeof keys.geminiKey === 'string') setGeminiKey(keys.geminiKey)
+          if (typeof keys.groqKey === 'string') setGroqKey(keys.groqKey)
+          if (typeof keys.hfKey === 'string') setHfKey(keys.hfKey)
+          if (typeof keys.notionKey === 'string') setNotionKey(keys.notionKey)
+          if (typeof keys.tavilyKey === 'string') setTailvyKey(keys.tavilyKey)
+        })
+        .catch(() => {})
+      window.electron.ipcRenderer
         .invoke('check-vault-status')
         .then((res) => setFaceCount(res?.faceCount || 0))
     }
@@ -101,14 +112,15 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
   }
 
   const saveApiKeys = async () => {
-    localStorage.setItem('iris_custom_api_key', geminiKey)
-    localStorage.setItem('iris_groq_api_key', groqKey)
-    localStorage.setItem('iris_hf_api_key', hfKey)
-    localStorage.setItem('iris_notion_api_key', notionKey)
-    localStorage.setItem('iris_tailvy_api_key', tailvyKey)
     if (window.electron?.ipcRenderer) {
       try {
-        await window.electron.ipcRenderer.invoke('secure-save-keys', { groqKey, geminiKey })
+        await window.electron.ipcRenderer.invoke('secure-save-keys', {
+          groqKey,
+          geminiKey,
+          hfKey,
+          notionKey,
+          tavilyKey: tailvyKey
+        })
       } catch (e) {}
     }
     setSavedKeys(true)

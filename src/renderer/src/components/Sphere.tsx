@@ -1,11 +1,12 @@
-import { Canvas, useFrame } from '@react-three/fiber'
-import { useRef, useMemo } from 'react'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { useEffect, useRef, useMemo } from 'react'
 import * as THREE from 'three'
 import { irisService } from '@renderer/services/Iris-voice-ai'
 
 const CustomParticleSphere = ({ count = 3000 }) => {
   const mesh = useRef<THREE.Points>(null)
   const particleTickRef = useRef(0)
+  const { invalidate } = useThree()
 
   const dataArray = useMemo(() => new Uint8Array(128), [])
   const colorA = useMemo(() => new THREE.Color('#33db12'), [])
@@ -75,6 +76,39 @@ const CustomParticleSphere = ({ count = 3000 }) => {
     mesh.current.geometry.attributes.position.needsUpdate = true
   })
 
+  useEffect(() => {
+    let timer: ReturnType<typeof setInterval> | null = null
+    let disposed = false
+
+    const schedule = () => {
+      if (timer) clearInterval(timer)
+      timer = setInterval(() => {
+        if (disposed) return
+        let avg = 0
+        if (irisService.analyser) {
+          irisService.analyser.getByteFrequencyData(dataArray)
+          avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length
+        }
+        const active = avg > 3
+        invalidate()
+        // Higher refresh while audio-reactive, very low when idle.
+        if (active && timer) {
+          clearInterval(timer)
+          timer = setInterval(() => invalidate(), 33)
+        } else if (!active && timer) {
+          clearInterval(timer)
+          timer = setInterval(() => invalidate(), 250)
+        }
+      }, 250)
+    }
+
+    schedule()
+    return () => {
+      disposed = true
+      if (timer) clearInterval(timer)
+    }
+  }, [dataArray, invalidate])
+
   return (
     <points ref={mesh}>
       <bufferGeometry>
@@ -101,7 +135,7 @@ const CustomParticleSphere = ({ count = 3000 }) => {
 
 const Sphere = () => {
   return (
-    <Canvas camera={{ position: [0, 0, 4.5] }}>
+    <Canvas camera={{ position: [0, 0, 4.5] }} dpr={[1, 1.5]} frameloop="demand">
       <ambientLight intensity={0.6} />
       <CustomParticleSphere />
     </Canvas>

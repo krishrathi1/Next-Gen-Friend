@@ -237,21 +237,24 @@ function startOAuthCallbackServer() {
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.electron')
 
-  ipcMain.handle('secure-save-keys', async (_, { groqKey, geminiKey }) => {
+  ipcMain.handle(
+    'secure-save-keys',
+    async (_, { groqKey, geminiKey, hfKey, notionKey, tavilyKey }) => {
     try {
-      let groqEncrypted, geminiEncrypted
-
-      if (safeStorage.isEncryptionAvailable()) {
-        groqEncrypted = safeStorage.encryptString(groqKey).toString('base64')
-        geminiEncrypted = safeStorage.encryptString(geminiKey).toString('base64')
-      } else {
-        groqEncrypted = Buffer.from(groqKey).toString('base64')
-        geminiEncrypted = Buffer.from(geminiKey).toString('base64')
+      const protect = (value: string) => {
+        const safe = value || ''
+        if (safeStorage.isEncryptionAvailable()) {
+          return safeStorage.encryptString(safe).toString('base64')
+        }
+        return Buffer.from(safe).toString('base64')
       }
 
-      const secureData = {
-        groq: groqEncrypted,
-        gemini: geminiEncrypted
+      const secureData: Record<string, string> = {
+        groq: protect(groqKey),
+        gemini: protect(geminiKey),
+        hf: protect(hfKey),
+        notion: protect(notionKey),
+        tavily: protect(tavilyKey)
       }
 
       fs.writeFileSync(secureConfigPath, JSON.stringify(secureData))
@@ -259,23 +262,28 @@ app.whenReady().then(() => {
     } catch (error: any) {
       return { success: false, error: error.message }
     }
-  })
+    }
+  )
 
   ipcMain.handle('secure-get-keys', async () => {
     if (!fs.existsSync(secureConfigPath)) return null
     try {
       const data = JSON.parse(fs.readFileSync(secureConfigPath, 'utf8'))
-      let groqKey, geminiKey
-
-      if (safeStorage.isEncryptionAvailable()) {
-        groqKey = safeStorage.decryptString(Buffer.from(data.groq, 'base64'))
-        geminiKey = safeStorage.decryptString(Buffer.from(data.gemini, 'base64'))
-      } else {
-        groqKey = Buffer.from(data.groq, 'base64').toString('utf8')
-        geminiKey = Buffer.from(data.gemini, 'base64').toString('utf8')
+      const unprotect = (value?: string) => {
+        if (!value) return ''
+        if (safeStorage.isEncryptionAvailable()) {
+          return safeStorage.decryptString(Buffer.from(value, 'base64'))
+        }
+        return Buffer.from(value, 'base64').toString('utf8')
       }
 
-      return { groqKey, geminiKey }
+      const groqKey = unprotect(data.groq)
+      const geminiKey = unprotect(data.gemini)
+      const hfKey = unprotect(data.hf)
+      const notionKey = unprotect(data.notion)
+      const tavilyKey = unprotect(data.tavily)
+
+      return { groqKey, geminiKey, hfKey, notionKey, tavilyKey }
     } catch (err) {
       return null
     }
