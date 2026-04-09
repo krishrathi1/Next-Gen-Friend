@@ -1,4 +1,5 @@
 ﻿import { memo, useEffect, useRef, useState, Suspense, lazy } from 'react'
+import { unstable_batchedUpdates } from 'react-dom'
 import {
   RiAppsLine,
   RiBatteryChargeLine,
@@ -83,22 +84,54 @@ const ELI = (props: EliProps) => {
 
   const isDashboardActive = activeTab === 'DASHBOARD'
   const appendPoint = (series: number[], value: number) => [...series.slice(-44), value]
+  const hasMeaningfulDelta = (a: number, b: number, threshold = 0.1) => Math.abs(a - b) >= threshold
 
   useEffect(() => {
     if (!isDashboardActive) return
 
     const applyStats = (nextStats: SystemStats | null) => {
-      setStats(nextStats)
-      if (nextStats) {
-        const cpu = Number(nextStats.cpu)
-        const ram = Number(nextStats.memory.usedPercentage)
-        const gpu = Number(nextStats.gpu || 0)
-        setMetricHistory((prev) => ({
-          cpu: Number.isFinite(cpu) ? appendPoint(prev.cpu, cpu) : prev.cpu,
-          ram: Number.isFinite(ram) ? appendPoint(prev.ram, ram) : prev.ram,
-          gpu: Number.isFinite(gpu) ? appendPoint(prev.gpu, gpu) : prev.gpu
-        }))
-      }
+      unstable_batchedUpdates(() => {
+        setStats((prev) => {
+          if (!nextStats) return nextStats
+          if (!prev) return nextStats
+
+          const sameCpu = prev.cpu === nextStats.cpu
+          const sameGpu = prev.gpu === nextStats.gpu
+          const sameMem = prev.memory.usedPercentage === nextStats.memory.usedPercentage
+          const sameTemp = prev.temperature === nextStats.temperature
+          const sameUptime = prev.os.uptime === nextStats.os.uptime
+
+          if (sameCpu && sameGpu && sameMem && sameTemp && sameUptime) return prev
+          return nextStats
+        })
+
+        if (nextStats) {
+          const cpu = Number(nextStats.cpu)
+          const ram = Number(nextStats.memory.usedPercentage)
+          const gpu = Number(nextStats.gpu || 0)
+
+          setMetricHistory((prev) => {
+            const prevCpu = prev.cpu[prev.cpu.length - 1]
+            const prevRam = prev.ram[prev.ram.length - 1]
+            const prevGpu = prev.gpu[prev.gpu.length - 1]
+
+            const cpuChanged =
+              Number.isFinite(cpu) && (!Number.isFinite(prevCpu) || hasMeaningfulDelta(cpu, prevCpu))
+            const ramChanged =
+              Number.isFinite(ram) && (!Number.isFinite(prevRam) || hasMeaningfulDelta(ram, prevRam))
+            const gpuChanged =
+              Number.isFinite(gpu) && (!Number.isFinite(prevGpu) || hasMeaningfulDelta(gpu, prevGpu))
+
+            if (!cpuChanged && !ramChanged && !gpuChanged) return prev
+
+            return {
+              cpu: Number.isFinite(cpu) ? appendPoint(prev.cpu, cpu) : prev.cpu,
+              ram: Number.isFinite(ram) ? appendPoint(prev.ram, ram) : prev.ram,
+              gpu: Number.isFinite(gpu) ? appendPoint(prev.gpu, gpu) : prev.gpu
+            }
+          })
+        }
+      })
     }
 
     const bootstrapStats = async () => {
@@ -173,8 +206,10 @@ const ELI = (props: EliProps) => {
       const lastStamp = last?.timestamp || ''
       const signature = `${trimmed.length}|${last?.role || ''}|${lastStamp}|${lastText}`
       if (signature !== lastHistorySigRef.current) {
-        lastHistorySigRef.current = signature
-        setChatHistory(trimmed)
+        unstable_batchedUpdates(() => {
+          lastHistorySigRef.current = signature
+          setChatHistory(trimmed)
+        })
       }
     }
 
@@ -382,4 +417,6 @@ const ELI = (props: EliProps) => {
 }
 
 export default ELI
+
+
 

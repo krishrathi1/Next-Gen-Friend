@@ -1,6 +1,6 @@
 ﻿import { handleNavigation, handleOpenMap } from '@renderer/tools/Earth-View'
 import { floatTo16BitPCM, base64ToFloat32, downsampleTo16000 } from '../utils/audioUtils'
-import { getRunningApps } from './get-apps'
+import { getRunningApps, RUNNING_APPS_TTL_MS } from './get-apps'
 import { getHistory, retrieveCoreMemory, saveCoreMemory, saveMessage } from './iris-ai-brain'
 import { getAllApps, getSystemStatus } from './system-info'
 import { handleImageGeneration } from '@renderer/tools/Image-generator'
@@ -1672,7 +1672,14 @@ ${JSON.stringify(history)}
   }
 
   startAppWatcher() {
+    const watcherTickMs = 1000
+    let lastFetchAt = 0
+
     this.appWatcherInterval = setInterval(async () => {
+      const now = Date.now()
+      if (now - lastFetchAt < RUNNING_APPS_TTL_MS) return
+      lastFetchAt = now
+
       if (!this.isConnected || !this.socket) return
 
       const currentApps = await getRunningApps()
@@ -1699,7 +1706,7 @@ ${JSON.stringify(history)}
           this.socket.send(JSON.stringify(updateFrame))
         }
       }
-    }, 8000)
+    }, watcherTickMs)
   }
 
   async startMicrophone(): Promise<void> {

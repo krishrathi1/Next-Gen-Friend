@@ -57,11 +57,19 @@ const AppRouter = () => {
 }
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
+  import.meta.env.DEV ? (
+    <StrictMode>
+      <SystemErrorBoundary>
+        <HashRouter>
+          <AppRouter />
+        </HashRouter>
+      </SystemErrorBoundary>
+    </StrictMode>
+  ) : (
     <SystemErrorBoundary>
       <HashRouter>
         <AppRouter />
       </HashRouter>
     </SystemErrorBoundary>
-  </StrictMode>
+  )
 )

@@ -1,7 +1,7 @@
 let runningAppsCache: string[] = []
 let runningAppsCacheAt = 0
 let runningAppsInFlight: Promise<string[]> | null = null
-const RUNNING_APPS_TTL_MS = 5000
+export const RUNNING_APPS_TTL_MS = 5000
 
 export const getRunningApps = async (): Promise<string[]> => {
   const now = Date.now()

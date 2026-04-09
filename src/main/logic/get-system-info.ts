@@ -97,19 +97,42 @@ let currentSystemStats = {
   uptime: '0h'
 }
 let getMainWindowRef: (() => BrowserWindow | null) | undefined
+let lastPushedCpu = Number.NaN
+let lastPushedRam = Number.NaN
+let lastStatsSentAt = 0
+const CPU_DIFF_THRESHOLD = 0.5
+const RAM_DIFF_THRESHOLD = 0.5
+const MIN_PUSH_INTERVAL_MS = 900
 
 // Low latency CPU monitoring (runs frequently)
 const startCpuMonitor = () => {
   setInterval(() => {
-    currentSystemStats.cpu = getSystemCpuUsage()
     const totalMem = os.totalmem()
     const freeMem = os.freemem()
+    const cpuValue = parseFloat(getSystemCpuUsage())
+    const usedPercentageValue = ((totalMem - freeMem) / totalMem) * 100
+
+    currentSystemStats.cpu = Number.isFinite(cpuValue) ? cpuValue.toFixed(1) : '0.0'
     currentSystemStats.memory = {
       total: (totalMem / 1024 ** 3).toFixed(1) + ' GB',
       free: (freeMem / 1024 ** 3).toFixed(1) + ' GB',
-      usedPercentage: (((totalMem - freeMem) / totalMem) * 100).toFixed(1)
+      usedPercentage: usedPercentageValue.toFixed(1)
     }
     currentSystemStats.uptime = (os.uptime() / 3600).toFixed(1) + 'h'
+
+    const cpuChanged =
+      !Number.isFinite(lastPushedCpu) || Math.abs(cpuValue - lastPushedCpu) >= CPU_DIFF_THRESHOLD
+    const ramChanged =
+      !Number.isFinite(lastPushedRam) ||
+      Math.abs(usedPercentageValue - lastPushedRam) >= RAM_DIFF_THRESHOLD
+
+    if (!cpuChanged && !ramChanged) return
+
+    const now = Date.now()
+    if (now - lastStatsSentAt < MIN_PUSH_INTERVAL_MS) return
+    lastStatsSentAt = now
+    lastPushedCpu = cpuValue
+    lastPushedRam = usedPercentageValue
 
     const target = getMainWindowRef?.()
     if (target && !target.isDestroyed()) {
