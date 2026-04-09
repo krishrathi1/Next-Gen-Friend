@@ -50,6 +50,7 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
   const [tailvyKey, setTailvyKey] = useState(localStorage.getItem('iris_tailvy_api_key') || '')
 
   const [isSecurityUnlocked, setIsSecurityUnlocked] = useState(false)
+  const [hasVaultPin, setHasVaultPin] = useState(true)
   const [authPin, setAuthPin] = useState('')
   const [authError, setAuthError] = useState(false)
 
@@ -84,7 +85,15 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
         .catch(() => {})
       window.electron.ipcRenderer
         .invoke('check-vault-status')
-        .then((res) => setFaceCount(res?.faceCount || 0))
+        .then((res) => {
+          const hasPin = !!res?.hasPin
+          setFaceCount(res?.faceCount || 0)
+          setHasVaultPin(hasPin)
+          if (!hasPin) {
+            // First-time setup: allow user to create the initial PIN directly.
+            setIsSecurityUnlocked(true)
+          }
+        })
     }
   }, [])
 
@@ -134,21 +143,43 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
 
   const unlockSecurityModule = async () => {
     if (!window.electron?.ipcRenderer) return
+    if (!hasVaultPin) {
+      setIsSecurityUnlocked(true)
+      addToast('No PIN configured yet. Create a new 4-digit master PIN below.', 'info')
+      return
+    }
+    if (authPin.length !== 4) {
+      setAuthError(true)
+      addToast('Enter your 4-digit master PIN to unlock Security settings.', 'error')
+      setTimeout(() => setAuthError(false), 1000)
+      return
+    }
+
     const isValid = await window.electron.ipcRenderer.invoke('verify-vault-pin', authPin)
     if (isValid) {
       setIsSecurityUnlocked(true)
       setAuthPin('')
+      addToast('Security module unlocked.', 'success')
     } else {
       setAuthError(true)
+      addToast('Invalid PIN. Try again.', 'error')
       setTimeout(() => setAuthError(false), 1000)
     }
   }
 
   const updateMasterPin = async () => {
-    if (newPin.length !== 4 || !window.electron?.ipcRenderer) return
+    if (!window.electron?.ipcRenderer) return
+    if (newPin.length !== 4) {
+      addToast('PIN must be exactly 4 digits.', 'error')
+      return
+    }
+
     await window.electron.ipcRenderer.invoke('setup-vault-pin', newPin)
     setNewPin('')
+    setHasVaultPin(true)
+    setIsSecurityUnlocked(true)
     setSavedPin(true)
+    addToast('Master PIN saved successfully.', 'success')
     setTimeout(() => setSavedPin(false), 2000)
   }
 
@@ -449,30 +480,37 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
                         <RiLockPasswordLine size={32} className="text-zinc-300" />
                       </div>
                       <p className="text-[11px] text-zinc-400 font-mono tracking-widest uppercase font-semibold">
-                        Authenticate to access vault
+                        {hasVaultPin ? 'Authenticate to access vault' : 'Initialize your security vault'}
                       </p>
                       <div className="flex gap-3 items-center h-11">
                         <input
                           type="password"
                           maxLength={4}
                           pattern="\d*"
+                          inputMode="numeric"
                           value={authPin}
                           onChange={(e) => setAuthPin(e.target.value.replace(/\D/g, ''))}
                           onKeyDown={(e) => e.key === 'Enter' && unlockSecurityModule()}
-                          placeholder="PIN"
+                          disabled={!hasVaultPin}
+                          placeholder={hasVaultPin ? 'PIN' : 'SETUP'}
                           className={`h-full bg-[#040407] border w-28 rounded-xl text-center text-xl tracking-[0.5em] text-white outline-none transition-all duration-200 ${
                             authError
                               ? 'border-red-500/60 text-red-400 bg-red-500/8 shadow-[0_0_0_3px_rgba(239,68,68,0.1)]'
                               : 'border-white/[0.12] focus:border-violet-500/50 focus:shadow-[0_0_0_3px_rgba(124,58,237,0.1)]'
-                          }`}
+                          } ${!hasVaultPin ? 'opacity-40 cursor-not-allowed' : ''}`}
                         />
                         <button
                           onClick={unlockSecurityModule}
                           className="h-full px-6 bg-violet-600/15 text-violet-300 text-[11px] font-semibold tracking-widest rounded-xl hover:bg-violet-600/25 border border-violet-500/25 transition-all duration-200 cursor-pointer"
                         >
-                          UNLOCK
+                          {hasVaultPin ? 'UNLOCK' : 'CONTINUE'}
                         </button>
                       </div>
+                      {!hasVaultPin && (
+                        <p className="text-[10px] text-zinc-500 font-mono tracking-wider uppercase">
+                          No master PIN found. Create one below to secure this device.
+                        </p>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -481,25 +519,31 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
                   {/* PIN Update */}
                   <div className="bg-[#0d0d14] border border-white/[0.06] p-6 rounded-2xl flex flex-col gap-5">
                     <span className={titleClass}>
-                      <RiLockPasswordLine size={16} className="text-violet-400" /> Update Master PIN
+                      <RiLockPasswordLine size={16} className="text-violet-400" /> {hasVaultPin ? 'Update Master PIN' : 'Create Master PIN'}
                     </span>
                     <div className={inputWrapClass}>
                       <input
                         type="password"
                         maxLength={4}
                         pattern="\d*"
+                        inputMode="numeric"
                         value={newPin}
                         onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
+                        onKeyDown={(e) => e.key === 'Enter' && updateMasterPin()}
                         placeholder="New 4-digit PIN"
                         className="bg-transparent border-none outline-none text-sm font-mono text-zinc-100 w-full tracking-[0.3em] placeholder:tracking-normal"
                       />
                       <button
                         onClick={updateMasterPin}
-                        className={`ml-3 p-1.5 rounded-lg transition-all duration-200 ${savedPin ? 'text-emerald-400 bg-emerald-500/10' : 'text-zinc-600 hover:text-white hover:bg-white/[0.08]'} cursor-pointer`}
+                        disabled={newPin.length !== 4}
+                        className={`ml-3 p-1.5 rounded-lg transition-all duration-200 ${savedPin ? 'text-emerald-400 bg-emerald-500/10' : 'text-zinc-600 hover:text-white hover:bg-white/[0.08]'} disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer`}
                       >
                         {savedPin ? <RiCheckLine size={16} /> : <RiSave3Line size={16} />}
                       </button>
                     </div>
+                    <p className="text-[10px] text-zinc-500 font-mono tracking-wider uppercase">
+                      Use exactly 4 numeric digits.
+                    </p>
                   </div>
 
                   {/* Biometric Registry */}
