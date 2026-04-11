@@ -1,4 +1,4 @@
-﻿# ELI AI — System Architecture
+# ELI AI — System Architecture
 
 > Deep technical reference for contributors and developers.
 > For usage and setup, see the [README](./README.md).
@@ -116,7 +116,7 @@ stateDiagram-v2
     Connected --> Disconnected: Watchdog timeout
 ```
 
-The **Watchdog** (`IndexRoot.tsx`) polls `irisService.isConnected` every 1 second. If the WebSocket drops silently, it resets the UI state and stops vision processing automatically.
+The **Watchdog** (`IndexRoot.tsx`) polls `eliService.isConnected` every 1 second. If the WebSocket drops silently, it resets the UI state and stops vision processing automatically.
 
 ---
 
@@ -273,7 +273,7 @@ graph LR
     subgraph "Encryption (Main Process)"
         Safe["electron.safeStorage.encryptString()"]
         B64["Base64 Encoding"]
-        File["iris_secure_vault.json<br/>(Encrypted blob on disk)"]
+        File["eli_secure_vault.json<br/>(Encrypted blob on disk)"]
     end
 
     subgraph "Runtime Decryption"
@@ -353,7 +353,7 @@ graph LR
 }
 ```
 
-Workflows are persisted to `iris_workflows.json` in the Electron `userData` directory.
+Workflows are persisted to `eli_workflows.json` in the Electron `userData` directory.
 
 ---
 

@@ -1,4 +1,4 @@
-﻿# Security Policy
+# Security Policy
 
 If you believe you've found a legitimate security vulnerability in the ELI OS Agent, please report it privately. Do not open public issues for critical zero-days or remote code execution (RCE) flaws.
 
@@ -50,7 +50,7 @@ Privacy is absolute. ELI operates on a strict zero-trust architecture regarding 
   - **Windows:** `DPAPI` via Electron `safeStorage`
   - **macOS:** Apple Keychain
   - **Linux:** Secret Service API
-- The keys are stored in a local, encrypted `iris_secure_vault.json` file.
+- The keys are stored in a local, encrypted `eli_secure_vault.json` file.
 - **Out of Scope:** Reports demonstrating that a malicious actor who already has root access to your machine can decrypt this file are out of scope. If an attacker has root, the machine is already compromised.
 
 ---
