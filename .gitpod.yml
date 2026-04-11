@@ -1,7 +1,7 @@
-image: gitpod/workspace-full-vnc
+﻿image: gitpod/workspace-full-vnc
 
 tasks:
-  - name: Install & Start IRIS
+  - name: Install & Start ELI
     init: npm install
     command: npm run dev
 

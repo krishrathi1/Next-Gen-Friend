@@ -1,4 +1,4 @@
-# GitHub Repository Settings Guide
+﻿# GitHub Repository Settings Guide
 
 After pushing to GitHub, configure these settings in the GitHub web UI for maximum discoverability:
 
@@ -43,7 +43,7 @@ Upload `assets/social_preview.png` (1280×640). This is the image shown when sha
 
 ## 4. Website URL (Settings → General)
 
-Set to: `https://irisaiw.vercel.app`
+Set to: `https://eliaiw.vercel.app`
 
 ## 5. Enable Discussions (Settings → General → Features)
 

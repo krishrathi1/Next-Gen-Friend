@@ -1,5 +1,5 @@
-================================================================================
-IRIS
+﻿================================================================================
+ELI
 The Autonomous Neural OS Agent
 A local-first neural execution system that turns intent into real OS actions.
 
@@ -20,7 +20,7 @@ Development Philosophy
 
 Contributing
 
-Extending IRIS
+Extending ELI
 
 Roadmap
 
@@ -32,12 +32,12 @@ License
 
 OVERVIEW
 
-IRIS is not a chatbot.
+ELI is not a chatbot.
 
 It is a local-first AI Operating System layer that executes real-world actions
 across your system, applications, and devices.
 
-"Speak your command. IRIS executes it."
+"Speak your command. ELI executes it."
 
 CORE FEATURES & SYSTEM CAPABILITIES
 
@@ -224,7 +224,7 @@ INSTALLATION & SETUP
 
 Step 1. Clone Repo
 git clone <your-repository-url>
-cd IRIS-AI
+cd ELI-AI
 
 Step 2. Environment Setup
 cp .env.example .env
@@ -246,7 +246,7 @@ Add API keys securely
 
 PROJECT STRUCTURE
 
-iris/
+ELI/
 |-- build/                   # OS-specific build artifacts
 |-- out/                     # Compiled output ready for packaging
 |-- resources/               # Static assets (icons, trained data, etc.)
@@ -272,7 +272,7 @@ Real-world usability
 
 CONTRIBUTING
 
-IRIS is built for the community. If you want to expand the neural forge,
+ELI is built for the community. If you want to expand the neural forge,
 submit a PR.
 
 Quick Start:
@@ -294,7 +294,7 @@ Keep your commit messages clean, descriptive, and easy to understand. Clearly
 state what the commit accomplishes and always include the relevant Issue ID.
 Example: git commit -m "feat: integrated new desktop widget (#45)"
 
-EXTENDING IRIS
+EXTENDING ELI
 
 You can:
 
@@ -316,7 +316,7 @@ ROADMAP
 
 DISCLAIMER
 
-IRIS has deep system-level execution capabilities.
+ELI has deep system-level execution capabilities.
 Use responsibly. The maintainers are not liable for misuse.
 
 OWNER
@@ -329,7 +329,7 @@ MIT License - see LICENSE file.
 
 ================================================================================
 FINAL NOTE
-IRIS is not a chatbot. It is a neural extension of your operating system.
+ELI is not a chatbot. It is a neural extension of your operating system.
 
 "System Online."
 

@@ -1,8 +1,8 @@
-<div align="center">
+﻿<div align="center">
 
-<img src="assets/social_preview.png" alt="IRIS AI — Voice-First Desktop AI Agent" width="100%" />
+<img src="assets/social_preview.png" alt="ELI AI — Voice-First Desktop AI Agent" width="100%" />
 
-# IRIS AI
+# ELI AI
 
 ### 🧠 Voice-First Autonomous Desktop Agent
 
@@ -16,15 +16,15 @@
 [![Gemini](https://img.shields.io/badge/AI-Gemini_Pro-FF6F00.svg)](https://deepmind.google/technologies/gemini/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
 
-[Website](https://irisaiw.vercel.app) · [Architecture](./ARCHITECTURE.md) · [Features Guide](./FEATURES_GUIDE.md) · [Contributing](./CONTRIBUTING.md)
+[Website](https://eliaiw.vercel.app) · [Architecture](./ARCHITECTURE.md) · [Features Guide](./FEATURES_GUIDE.md) · [Contributing](./CONTRIBUTING.md)
 
 </div>
 
 ---
 
-## 🚀 What is IRIS?
+## 🚀 What is ELI?
 
-IRIS is an **open-source desktop AI agent** that executes real operating system actions through voice commands. Unlike chatbots that just generate text, IRIS can:
+ELI is an **open-source desktop AI agent** that executes real operating system actions through voice commands. Unlike chatbots that just generate text, ELI can:
 
 - 🎤 **Listen** to your voice and understand intent in real-time via Gemini's multimodal live API
 - 👁️ **See** your screen through OCR and vision AI to understand context
@@ -39,7 +39,7 @@ IRIS is an **open-source desktop AI agent** that executes real operating system 
 
 ## 🏗️ Architecture Overview
 
-IRIS uses Electron's multi-process model to bridge AI intelligence with OS-level execution:
+ELI uses Electron's multi-process model to bridge AI intelligence with OS-level execution:
 
 ```mermaid
 graph LR
@@ -48,7 +48,7 @@ graph LR
         Screen["👁️ Screen"]
     end
 
-    subgraph "IRIS (Electron)"
+    subgraph "ELI (Electron)"
         direction TB
         UI["React Dashboard"]
         Bridge["IPC Bridge"]
@@ -203,7 +203,7 @@ npm run build:linux  # Linux (AppImage, Snap, Deb)
 
 ## 🔑 Environment Variables
 
-IRIS uses `.env` for local development. In production, keys are entered through the Settings UI and encrypted via OS keychain.
+ELI uses `.env` for local development. In production, keys are entered through the Settings UI and encrypted via OS keychain.
 
 | Variable | Required | Purpose |
 | :--- | :--- | :--- |
@@ -295,13 +295,13 @@ We welcome contributions! Please read our [Contributing Guide](./CONTRIBUTING.md
 
 ## 🔒 Security Note
 
-IRIS executes real system-level actions. Treat it as a privileged desktop runtime.
+ELI executes real system-level actions. Treat it as a privileged desktop runtime.
 
 - API keys are encrypted via OS-native keychain (`safeStorage`)
 - All system operations route through the IPC bridge (no direct renderer → OS access)
 - Current dev config uses `webSecurity: false` and `sandbox: false` for compatibility — harden before production distribution
 
-See the full [Security Policy](./SECURITY.md) and [Threat Model](./SECURITY.md#-iris-trust--threat-model-critical).
+See the full [Security Policy](./SECURITY.md) and [Threat Model](./SECURITY.md#-ELI-trust--threat-model-critical).
 
 ---
 
@@ -315,6 +315,6 @@ See the full [Security Policy](./SECURITY.md) and [Threat Model](./SECURITY.md#-
 
 **Crafted by [Team WinHAiJi]**
 
-*If IRIS helped you, consider giving it a ⭐ — it helps others discover this project.*
+*If ELI helped you, consider giving it a ⭐ — it helps others discover this project.*
 
 </div>

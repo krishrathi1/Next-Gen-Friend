@@ -1,4 +1,4 @@
-# IRIS Feature Guide (Detailed)
+﻿# ELI Feature Guide (Detailed)
 
 This guide explains the current product features in this codebase and how to use each one step-by-step.
 
@@ -133,7 +133,7 @@ Notes is a markdown-based memory system with read mode and edit mode.
 
 ### What it does
 
-Shows generated images saved by IRIS, with preview, lightbox navigation, and export actions.
+Shows generated images saved by ELI, with preview, lightbox navigation, and export actions.
 
 ### How to use it
 

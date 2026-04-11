@@ -1,4 +1,4 @@
-# Project Audit + Rename Report
+﻿# Project Audit + Rename Report
 
 Generated on: 2026-04-08  
 Project root: `d:\next-gen\Next-Gen-Friend`
@@ -21,7 +21,7 @@ Project root: `d:\next-gen\Next-Gen-Friend`
 1. **Missing handler: `deploy-wormhole`**
    - Invoked from:
      - `src/renderer/src/views/WorkFlowEditor.tsx`
-     - `src/renderer/src/services/Iris-voice-ai.ts`
+     - `src/renderer/src/services/ELI-voice-ai.ts`
    - Existing handler in main is named:
      - `open-wormhole` in `src/main/services/wormhole.ts`
    - Impact:
@@ -49,13 +49,13 @@ Project root: `d:\next-gen\Next-Gen-Friend`
 
 ### Working/available core surfaces
 
-- Dashboard, Macros, Notes, Gallery, Phone, Settings are wired in `src/renderer/src/UI/IRIS.tsx`.
+- Dashboard, Macros, Notes, Gallery, Phone, Settings are wired in `src/renderer/src/UI/ELI.tsx`.
 
 ### Feature gap found
 
 1. **Apps view exists but is not wired in navigation**
    - File exists: `src/renderer/src/views/APP.tsx`
-   - No import/use of this view in `IRIS.tsx` tab routing.
+   - No import/use of this view in `ELI.tsx` tab routing.
    - Impact:
      - Apps UI is currently unreachable from the main tab navigation.
 
@@ -71,7 +71,7 @@ Project root: `d:\next-gen\Next-Gen-Friend`
 6. `README.txt`
 7. `SECURITY.md`
 8. `src/renderer/src/functions/gallery-managet-api.ts`
-9. `src/renderer/src/services/Iris-voice-ai.ts`
+9. `src/renderer/src/services/ELI-voice-ai.ts`
 10. `src/main/logic/reality-hacker.ts`
 
 ### Cleanup verification

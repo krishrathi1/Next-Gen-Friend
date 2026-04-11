@@ -1,4 +1,4 @@
-# IRIS AI — System Architecture
+﻿# ELI AI — System Architecture
 
 > Deep technical reference for contributors and developers.
 > For usage and setup, see the [README](./README.md).
@@ -20,7 +20,7 @@
 
 ## Process Model
 
-IRIS uses Electron's multi-process architecture to isolate privileged OS operations from the React UI. The **Main Process** is the only context with access to `fs`, `child_process`, `adb`, and native APIs. The **Renderer Process** (React) communicates exclusively through `ipcRenderer.invoke()` calls exposed via a `contextBridge` in the **Preload** script.
+ELI uses Electron's multi-process architecture to isolate privileged OS operations from the React UI. The **Main Process** is the only context with access to `fs`, `child_process`, `adb`, and native APIs. The **Renderer Process** (React) communicates exclusively through `ipcRenderer.invoke()` calls exposed via a `contextBridge` in the **Preload** script.
 
 ```mermaid
 graph TB
@@ -72,13 +72,13 @@ graph TB
 | `sandbox: false` | Required for `nut-js` desktop automation and native module access |
 | `webSecurity: false` | Required for cross-origin AI API calls from renderer dev server |
 | `backgroundThrottling: false` | Voice/vision processing must continue when window is unfocused |
-| Single-instance lock | Prevents multiple IRIS instances from conflicting on IPC ports |
+| Single-instance lock | Prevents multiple ELI instances from conflicting on IPC ports |
 
 ---
 
 ## Voice Command Pipeline
 
-IRIS uses Google's Gemini multimodal live API through a WebSocket connection. Audio is streamed in real-time from the browser's Web Audio API, and the model responds with both text and tool calls.
+ELI uses Google's Gemini multimodal live API through a WebSocket connection. Audio is streamed in real-time from the browser's Web Audio API, and the model responds with both text and tool calls.
 
 ```mermaid
 sequenceDiagram
@@ -122,7 +122,7 @@ The **Watchdog** (`IndexRoot.tsx`) polls `irisService.isConnected` every 1 secon
 
 ## Vision & Screen Analysis
 
-IRIS captures and analyzes desktop content every 2 seconds when vision mode is active. Two modes are supported:
+ELI captures and analyzes desktop content every 2 seconds when vision mode is active. Two modes are supported:
 
 | Mode | Source | Use Case |
 | :--- | :--- | :--- |
@@ -169,11 +169,11 @@ graph TD
 
 ## Mobile Telekinesis (ADB)
 
-IRIS controls Android devices through a TCP/IP ADB bridge. All commands route through `child_process.exec()` in the Main process.
+ELI controls Android devices through a TCP/IP ADB bridge. All commands route through `child_process.exec()` in the Main process.
 
 ```mermaid
 graph TD
-    subgraph "IRIS Desktop (Main Process)"
+    subgraph "ELI Desktop (Main Process)"
         IPC["ipcMain.handle('adb-*')"]
         Exec["execAsync('adb -s ip:port shell ...')"]
     end
@@ -220,7 +220,7 @@ sequenceDiagram
 
 ## Local RAG & Semantic Search
 
-IRIS implements a **hybrid search engine** that combines vector-semantic search with native filesystem crawling.
+ELI implements a **hybrid search engine** that combines vector-semantic search with native filesystem crawling.
 
 ```mermaid
 graph TD
@@ -382,8 +382,8 @@ Complete list of registered `ipcMain.handle` channels:
 | :--- | :--- | :--- | :--- |
 | `index-folder` | `file-search.ts` | `{ folderPath }` | Vectorize directory into LanceDB |
 | `search-files` | `file-search.ts` | `{ query, groqKey }` | Hybrid semantic + native search |
-| `save-memory` | `iris-memory-save.ts` | `{ data }` | Save conversation memory |
-| `load-memory` | `iris-memory-save.ts` | `void` | Retrieve conversation memory |
+| `save-memory` | `ELI-memory-save.ts` | `{ data }` | Save conversation memory |
+| `load-memory` | `ELI-memory-save.ts` | `void` | Retrieve conversation memory |
 | `save-note` | `notes-manager.ts` | `{ title, content }` | Create markdown note |
 | `read-notes` | `notes-manager.ts` | `void` | List all saved notes |
 | `save-permanent-memory` | `permanent-memory.ts` | `{ key, value }` | Persistent identity store |
@@ -395,7 +395,7 @@ Complete list of registered `ipcMain.handle` channels:
 | :--- | :--- | :--- | :--- |
 | `google-search` | `web-agent.ts` | `{ query }` | Smart web search + scrape |
 | `hack-website` | `reality-hacker.ts` | `{ url, mode }` | DOM injection/theme override |
-| `iris-coder` | `iris-coder.ts` | `{ prompt }` | AI code generation |
+| `ELI-coder` | `ELI-coder.ts` | `{ prompt }` | AI code generation |
 | `deep-research` | `deep-research.ts` | `{ query }` | Multi-source autonomous research |
 | `oracle-query` | `RAG-oracle.ts` | `{ query }` | Local codebase RAG |
 | `oracle-ingest` | `RAG-oracle.ts` | `{ dirPath }` | Ingest codebase into vector DB |

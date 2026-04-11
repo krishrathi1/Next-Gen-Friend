@@ -1,11 +1,11 @@
-title: "💡 [Idea]: "
+﻿title: "💡 [Idea]: "
 labels:
   - idea
 body:
   - type: markdown
     attributes:
       value: |
-        ## Share Your IRIS Vision
+        ## Share Your ELI Vision
         Have an idea for a new AI tool, integration, or workflow? Share it here.
         For concrete, implementable features with technical specs, use the [Feature Request](../issues/new?template=feature_request.yml) template instead.
 
@@ -13,8 +13,8 @@ body:
     id: idea
     attributes:
       label: What's the idea?
-      description: Describe your concept in a few sentences. What should IRIS be able to do?
-      placeholder: "Example: IRIS should be able to auto-organize my Downloads folder based on file type and project context using its semantic search engine."
+      description: Describe your concept in a few sentences. What should ELI be able to do?
+      placeholder: "Example: ELI should be able to auto-organize my Downloads folder based on file type and project context using its semantic search engine."
     validations:
       required: true
 
@@ -23,7 +23,7 @@ body:
     attributes:
       label: Why does this matter?
       description: What problem does this solve or what workflow does it improve?
-      placeholder: "My Downloads folder has 2000+ files. Manual sorting is impossible. IRIS already has the semantic indexing to understand file content."
+      placeholder: "My Downloads folder has 2000+ files. Manual sorting is impossible. ELI already has the semantic indexing to understand file content."
 
   - type: textarea
     id: context

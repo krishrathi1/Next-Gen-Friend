@@ -1,5 +1,5 @@
-appId: com.krishrathi.irisai
-productName: IRIS AI
+﻿appId: com.krishrathi.eliai
+productName: ELI AI
 directories:
   buildResources: build
 files:
@@ -13,7 +13,7 @@ asarUnpack:
   - resources/**
 
 win:
-  executableName: iris-ai
+  executableName: ELI-AI
   icon: build/icon.ico 
   target:
     - target: nsis
