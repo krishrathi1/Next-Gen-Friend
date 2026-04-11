@@ -5,6 +5,34 @@
   "main": "./out/main/index.js",
   "author": "Krish Rathi <krishrathi877@gmail.com>",
   "homepage": "https://irisaiw.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/krishrathi1/Next-Gen-Friend.git"
+  },
+  "bugs": {
+    "url": "https://github.com/krishrathi1/Next-Gen-Friend/issues"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "keywords": [
+    "ai-desktop-assistant",
+    "electron-ai",
+    "voice-controlled-desktop",
+    "desktop-automation",
+    "local-first-ai",
+    "ai-agent",
+    "os-automation",
+    "android-remote-control",
+    "adb-desktop",
+    "semantic-file-search",
+    "rag-local",
+    "multimodal-ai",
+    "gemini-electron",
+    "workflow-automation",
+    "desktop-ai-agent",
+    "open-source-ai"
+  ],
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint --cache .",
