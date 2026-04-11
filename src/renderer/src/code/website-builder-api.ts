@@ -1,4 +1,4 @@
-export const buildAnimatedWebsite = async (prompt: string) => {
+﻿export const buildAnimatedWebsite = async (prompt: string) => {
   try {
     const geminiKey = localStorage.getItem('iris_custom_api_key') || ''
 

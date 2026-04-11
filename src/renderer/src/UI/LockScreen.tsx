@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+﻿import { useState, useEffect, useRef } from 'react'
 import {
   RiShieldKeyholeLine,
   RiFingerprintLine,
@@ -423,7 +423,7 @@ export default function LockScreen({ onUnlock }: LockScreenProps) {
 
       {/* Footer */}
       <div className="absolute bottom-6 text-[9px] font-mono tracking-widest text-zinc-700 uppercase">
-        IRIS Kernel Security V3.5 · Biometric Linked
+        ELI Kernel Security V3.5 · Biometric Linked
       </div>
     </div>
   )

@@ -1,4 +1,4 @@
-import {
+﻿import {
   app,
   shell,
   BrowserWindow,
@@ -18,7 +18,7 @@ import http from 'http'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
-import registerIpcHandlers from './logic/iris-memory-save'
+import registerIpcHandlers from './logic/eli-memory-save'
 import registerSystemHandlers from './logic/get-system-info'
 import registerFileSearch from './logic/file-search'
 import registerFileOps from './logic/file-ops'
@@ -37,7 +37,7 @@ import registerGmailHandlers from './logic/gmail-manager'
 import registerLocationHandlers from './logic/live-location'
 import registerAdbHandlers from './logic/adb-manager'
 import registerRealityHacker from './logic/reality-hacker'
-import registerIrisCoder from './services/iris-coder'
+import registerEliCoder from './services/eli-coder'
 import registerTelekinesis from './logic/telekinesis'
 import registerPermanentMemory from './logic/permanent-memory'
 import registerWormhole from './services/wormhole'
@@ -60,10 +60,10 @@ app.commandLine.appendSwitch(
 
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
-    app.setAsDefaultProtocolClient('iris', process.execPath, [path.resolve(process.argv[1])])
+    app.setAsDefaultProtocolClient('ELI', process.execPath, [path.resolve(process.argv[1])])
   }
 } else {
-  app.setAsDefaultProtocolClient('iris')
+  app.setAsDefaultProtocolClient('ELI')
 }
 
 const gotTheLock = app.requestSingleInstanceLock()
@@ -76,17 +76,17 @@ let isOverlayMode = false
 let pendingOAuthUrl: string | null = null
 let oauthCallbackServer: http.Server | null = null
 
-const secureConfigPath = join(app.getPath('userData'), 'iris_secure_vault.json')
+const secureConfigPath = join(app.getPath('userData'), 'eli_secure_vault.json')
 const OVERLAY_WIDTH = 490
 const OVERLAY_HEIGHT = 64
 const OVERLAY_BOTTOM_OFFSET = 34
 
 function extractIrisUrl(argv: string[]): string | null {
-  return argv.find((arg) => typeof arg === 'string' && arg.startsWith('iris://')) || null
+  return argv.find((arg) => typeof arg === 'string' && arg.startsWith('eli://')) || null
 }
 
 function forwardOAuthCallback(url: string) {
-  if (!url.startsWith('iris://') && !url.startsWith('http://127.0.0.1:54321/auth/callback')) return
+  if (!url.startsWith('eli://') && !url.startsWith('http://127.0.0.1:54321/auth/callback')) return
 
   pendingOAuthUrl = url
 
@@ -215,11 +215,11 @@ function startOAuthCallbackServer() {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
       res.end(`<!doctype html>
 <html>
-  <head><title>IRIS Auth</title></head>
+  <head><title>ELI Auth</title></head>
   <body style="font-family: Arial, sans-serif; background: #050505; color: #fff; display: flex; align-items: center; justify-content: center; height: 100vh;">
     <div style="text-align: center;">
       <h2>Authentication Complete</h2>
-      <p>You can return to IRIS-AI.</p>
+      <p>You can return to ELI-AI.</p>
       <script>window.close();</script>
     </div>
   </body>
@@ -337,7 +337,7 @@ app.whenReady().then(() => {
 
   app.on('open-url', (event, url) => {
     event.preventDefault()
-    if (url.startsWith('iris://')) forwardOAuthCallback(url)
+    if (url.startsWith('eli://')) forwardOAuthCallback(url)
   })
 
   startOAuthCallbackServer()
@@ -355,7 +355,7 @@ app.whenReady().then(() => {
   registerWormhole({ ipcMain })
   registerPermanentMemory({ ipcMain, app })
   registerTelekinesis({ ipcMain })
-  registerIrisCoder({ ipcMain, app })
+  registerEliCoder({ ipcMain, app })
   registerRealityHacker(ipcMain)
   registerAdbHandlers(ipcMain)
   registerLocationHandlers(ipcMain)

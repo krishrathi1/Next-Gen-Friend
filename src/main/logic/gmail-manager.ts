@@ -1,4 +1,4 @@
-import { IpcMain, app, BrowserWindow } from 'electron'
+﻿import { IpcMain, app, BrowserWindow } from 'electron'
 import fs from 'fs/promises'
 import path from 'path'
 import process from 'process'

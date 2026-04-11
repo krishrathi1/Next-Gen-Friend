@@ -1,4 +1,4 @@
-import { IpcMain, BrowserWindow, app, shell, clipboard, screen } from 'electron'
+﻿import { IpcMain, BrowserWindow, app, shell, clipboard, screen } from 'electron'
 import { keyboard, Key, mouse, Point, Button } from '@nut-tree-fork/nut-js'
 import screenshot from 'screenshot-desktop'
 import loudness from 'loudness'
@@ -232,7 +232,7 @@ export default function registerGhostControl(
   })
   ipcMain.handle('take-screenshot', async () => {
     try {
-      const filename = `IRIS_Capture_${Date.now()}.png`
+      const filename = `ELI_Capture_${Date.now()}.png`
       const savePath = path.join(app.getPath('pictures'), filename)
       await screenshot({ filename: savePath })
       shell.showItemInFolder(savePath)

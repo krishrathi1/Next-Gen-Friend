@@ -1,10 +1,10 @@
 {
-  "name": "iris-ai",
+  "name": "eli-ai",
   "version": "1.0.0",
-  "description": "IRIS is not another chatbot you type at. It is an intelligent Voice-First Operating Layer that gives you complete, hands-free authority over your digital environment. It lives on your desktop, watches your workflow, and executes your intent instantly.",
+  "description": "ELI AI is not another chatbot you type at. It is an intelligent Voice-First Operating Layer that gives you complete, hands-free authority over your digital environment. It lives on your desktop, watches your workflow, and executes your intent instantly.",
   "main": "./out/main/index.js",
   "author": "Krish Rathi <krishrathi877@gmail.com>",
-  "homepage": "https://irisaiw.vercel.app",
+  "homepage": "https://eliaiw.vercel.app",
   "repository": {
     "type": "git",
     "url": "https://github.com/krishrathi1/Next-Gen-Friend.git"

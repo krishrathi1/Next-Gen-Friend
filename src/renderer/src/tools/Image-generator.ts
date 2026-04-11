@@ -1,4 +1,4 @@
-import { InferenceClient } from '@huggingface/inference'
+﻿import { InferenceClient } from '@huggingface/inference'
 
 export const handleImageGeneration = async (prompt: string) => {
   const loadingEvent = new CustomEvent('image-gen', {

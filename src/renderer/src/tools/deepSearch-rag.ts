@@ -1,4 +1,4 @@
-export const runDeepResearch = async (query: string): Promise<string> => {
+﻿export const runDeepResearch = async (query: string): Promise<string> => {
   try {
     window.dispatchEvent(new CustomEvent('deep-research-start', { detail: { query } }))
 

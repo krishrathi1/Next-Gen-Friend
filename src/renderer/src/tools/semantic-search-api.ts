@@ -1,4 +1,4 @@
-export const runIndexDirectory = async (folderPath: string) => {
+﻿export const runIndexDirectory = async (folderPath: string) => {
   try {
     window.dispatchEvent(
       new CustomEvent('semantic-start', { detail: { mode: 'Index', target: folderPath } })

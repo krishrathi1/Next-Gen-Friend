@@ -1,11 +1,11 @@
-import { IpcMain, app } from 'electron'
+﻿import { IpcMain, app } from 'electron'
 import fs from 'fs/promises'
 import path from 'path'
 import crypto from 'crypto'
 import { GoogleGenAI } from '@google/genai'
 import Groq from 'groq-sdk'
 
-const getStateDir = () => path.join(app.getPath('userData'), 'iris_scan_states')
+const getStateDir = () => path.join(app.getPath('userData'), 'eli_scan_states')
 
 interface ScanState {
   dirPath: string

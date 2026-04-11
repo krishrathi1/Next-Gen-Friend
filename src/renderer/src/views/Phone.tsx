@@ -640,7 +640,7 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
 
           <div className="p-4 bg-gradient-to-r from-violet-500/10 via-fuchsia-500/10 to-violet-500/10 border border-violet-500/20 rounded-2xl relative z-10 mt-auto shadow-inner">
             <p className="text-[9.5px] text-violet-300/80 font-mono leading-relaxed text-center tracking-[0.1em]">
-              IRIS NEURAL VOICE INTERFACE<br/>
+              ELI NEURAL VOICE INTERFACE<br/>
               <span className="text-violet-200 font-bold mt-1 inline-block">COMMAND EXECUTION READY</span>
             </p>
           </div>

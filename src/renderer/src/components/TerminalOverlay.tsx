@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+﻿import { useEffect, useRef, useState } from 'react'
 import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
 import 'xterm/css/xterm.css'
@@ -54,7 +54,7 @@ export default function TerminalOverlay() {
 
       term.writeln('\x1b[32m╔════════════════════════════════════════╗\x1b[0m')
       term.writeln('\x1b[32m║  SYSTEM CORE: ONLINE                   ║\x1b[0m')
-      term.writeln('\x1b[32m║  PROTOCOL: IRIS_GHOST_SHELL_V2         ║\x1b[0m')
+      term.writeln('\x1b[32m║  PROTOCOL: ELI_GHOST_SHELL_V2         ║\x1b[0m')
       term.writeln('\x1b[32m╚════════════════════════════════════════╝\x1b[0m')
       term.writeln('')
     }, 100)

@@ -109,7 +109,7 @@ const nodeTypes = { customTool: ToolNode }
 function Editor() {
   const [nodes, setNodes] = useState<any[]>([])
   const [edges, setEdges] = useState<any[]>([])
-  const [workflowName, setWorkflowName] = useState('New IRIS Macro')
+  const [workflowName, setWorkflowName] = useState('New ELI Macro')
   const [description, setDescription] = useState('Custom Macro')
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [isSaved, setIsSaved] = useState(false)
@@ -145,7 +145,7 @@ function Editor() {
   }
 
   const resetCanvas = () => {
-    setWorkflowName('New IRIS Macro')
+    setWorkflowName('New ELI Macro')
     setDescription('Custom Macro')
     setNodes([])
     setEdges([])

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import MiniOverlay from './components/MiniOverlay'
-import { irisService } from './services/Iris-voice-ai'
+import { eliService } from './services/Eli-voice-ai'
 import { getScreenSourceId } from './hooks/CaptureDesktop'
 import ELI from './UI/IRIS'
 import TerminalOverlay from './components/TerminalOverlay'
@@ -73,7 +73,7 @@ const IndexRoot = () => {
 
   useEffect(() => {
     const watchdog = setInterval(() => {
-      if (isSystemActive && !irisService.isConnected) {
+      if (isSystemActive && !eliService.isConnected) {
         setIsSystemActive(false)
         setIsMicMuted(true)
         stopVision()
@@ -148,10 +148,10 @@ const IndexRoot = () => {
   const toggleSystem = async () => {
     if (!isSystemActive) {
       try {
-        await irisService.connect()
+        await eliService.connect()
         setIsSystemActive(true)
         setIsMicMuted(false)
-        irisService.setMute(false)
+        eliService.setMute(false)
       } catch (err: any) {
         if (err.message === 'NO_API_KEY') {
           addToast('Critical error: Gemini API key missing. Add it in Settings > API Keys.', 'error')
@@ -161,10 +161,10 @@ const IndexRoot = () => {
         setIsSystemActive(false)
       }
     } else {
-      irisService.disconnect()
+      eliService.disconnect()
       setIsSystemActive(false)
       setIsMicMuted(true)
-      irisService.setMute(true)
+      eliService.setMute(true)
       stopVision()
     }
   }
@@ -172,7 +172,7 @@ const IndexRoot = () => {
   const toggleMic = () => {
     const s = !isMicMuted
     setIsMicMuted(s)
-    irisService.setMute(s)
+    eliService.setMute(s)
   }
 
   const startVision = async (mode: 'camera' | 'screen') => {
@@ -251,8 +251,8 @@ const IndexRoot = () => {
 
     aiIntervalRef.current = setInterval(() => {
       const vid = processingVideoRef.current
-      if (vid && vid.readyState === 4 && irisService.socket?.readyState === WebSocket.OPEN) {
-        if (irisService.socket.bufferedAmount > 1024 * 1024) return
+      if (vid && vid.readyState === 4 && eliService.socket?.readyState === WebSocket.OPEN) {
+        if (eliService.socket.bufferedAmount > 1024 * 1024) return
         const canvas = frameCanvasRef.current!
         canvas.width = 640
         canvas.height = 360
@@ -260,7 +260,7 @@ const IndexRoot = () => {
         if (ctx) {
           ctx.drawImage(vid, 0, 0, canvas.width, canvas.height)
           const base64 = canvas.toDataURL('image/jpeg', 0.45).split(',')[1]
-          irisService.sendVideoFrame(base64)
+          eliService.sendVideoFrame(base64)
         }
       }
     }, 1200)

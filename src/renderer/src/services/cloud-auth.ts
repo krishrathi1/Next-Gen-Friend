@@ -1,4 +1,4 @@
-import { supabase } from '@renderer/config/supabase'
+﻿import { supabase } from '@renderer/config/supabase'
 import type { Session, User } from '@supabase/supabase-js'
 import type { CloudUserProfile } from '@renderer/store/auth-store'
 
@@ -100,7 +100,7 @@ function getUserProfilePayload(user: User, overrides?: Partial<Record<'status' |
       overrides?.name ||
       (user.user_metadata?.full_name as string) ||
       (user.user_metadata?.name as string) ||
-      'IRIS User',
+      'ELI User',
     google_id: (user.user_metadata?.sub as string) || null,
     verified: user.email_confirmed_at != null,
     ...(overrides?.status ? { status: overrides.status } : {})
@@ -115,12 +115,12 @@ export async function ensureCloudUserProfile(user: User): Promise<void> {
   if (error) {
     if ((error as any).code === '42P01') {
       throw new Error(
-        'Supabase table missing. Run IRIS-AI/supabase/schema.sql in SQL Editor first.'
+        'Supabase table missing. Run ELI-AI/supabase/schema.sql in SQL Editor first.'
       )
     }
     if ((error as any).code === '42501') {
       throw new Error(
-        'RLS policy missing for users insert. Re-run IRIS-AI/supabase/schema.sql in SQL Editor.'
+        'RLS policy missing for users insert. Re-run ELI-AI/supabase/schema.sql in SQL Editor.'
       )
     }
     throw new Error(error.message)
@@ -150,7 +150,7 @@ export async function enforceSingleDeviceForUser(userId: string): Promise<void> 
   if (existingError) {
     if ((existingError as any).code === '42P01') {
       throw new Error(
-        'Supabase table missing. Run IRIS-AI/supabase/schema.sql in SQL Editor first.'
+        'Supabase table missing. Run ELI-AI/supabase/schema.sql in SQL Editor first.'
       )
     }
     throw new Error(existingError.message)
@@ -179,7 +179,7 @@ export async function enforceSingleDeviceForUser(userId: string): Promise<void> 
   if (upsertError) {
     if ((upsertError as any).code === '42P01') {
       throw new Error(
-        'Supabase table missing. Run IRIS-AI/supabase/schema.sql in SQL Editor first.'
+        'Supabase table missing. Run ELI-AI/supabase/schema.sql in SQL Editor first.'
       )
     }
     throw new Error(upsertError.message)
@@ -238,7 +238,7 @@ export async function startGoogleOAuth(mode: OAuthMode = 'signin'): Promise<void
 
 export async function completeOAuthFromDeepLink(rawUrl: string): Promise<OAuthCompletionResult> {
   const intent = consumeOAuthIntent()
-  const parsed = new URL(rawUrl.replace('iris://', 'http://localhost/'))
+  const parsed = new URL(rawUrl.replace('eli://', 'http://localhost/'))
 
   const hash = parsed.hash.startsWith('#') ? parsed.hash.slice(1) : parsed.hash
   const hashParams = new URLSearchParams(hash)
@@ -303,12 +303,12 @@ export async function checkUserApprovalStatus(userId: string): Promise<'pending'
   if (error) {
     if ((error as any).code === '42P01') {
       throw new Error(
-        'Supabase table missing. Run IRIS-AI/supabase/schema.sql in SQL Editor first.'
+        'Supabase table missing. Run ELI-AI/supabase/schema.sql in SQL Editor first.'
       )
     }
     if ((error as any).code === '42501') {
       throw new Error(
-        'RLS policy missing for users select. Re-run IRIS-AI/supabase/schema.sql in SQL Editor.'
+        'RLS policy missing for users select. Re-run ELI-AI/supabase/schema.sql in SQL Editor.'
       )
     }
     throw new Error(`Could not read approval status: ${error.message}`)

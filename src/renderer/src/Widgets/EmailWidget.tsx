@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   RiMailSendLine,
@@ -86,7 +86,7 @@ export default function EmailWidget() {
               <p className="text-[10px] text-zinc-500 font-mono mt-1 uppercase">
                 {selectedEmail
                   ? cleanSender(selectedEmail.from)
-                  : `INTERCEPTED BY IRIS // ${emails.length} MESSAGES`}
+                  : `INTERCEPTED BY ELI // ${emails.length} MESSAGES`}
               </p>
             </div>
           </div>

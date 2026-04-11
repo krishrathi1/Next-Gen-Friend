@@ -1,4 +1,4 @@
-import fs from 'fs'
+﻿import fs from 'fs'
 import fsPromises from 'fs/promises'
 import path from 'path'
 import { IpcMain, App, BrowserWindow } from 'electron'
@@ -13,7 +13,7 @@ export default function registerIpcHandlers({
   getMainWindow?: () => BrowserWindow | null
 }) {
   const CHAT_DIR = path.resolve(app.getPath('userData'), 'Chat')
-  const FILE_PATH = path.join(CHAT_DIR, 'iris_memory.json')
+  const FILE_PATH = path.join(CHAT_DIR, 'eli_memory.json')
   type HistoryEntry = { role: string; content: string; timestamp: string }
 
   let historyCache: HistoryEntry[] | null = null
@@ -78,7 +78,7 @@ export default function registerIpcHandlers({
     try {
       await ensureLoaded()
       return (historyCache || []).map((m: any) => ({
-        role: m.role === 'iris' ? 'model' : m.role,
+        role: m.role === 'ELI' ? 'model' : m.role,
         content: m.content,
         parts: [{ text: m.content }],
         timestamp: m.timestamp

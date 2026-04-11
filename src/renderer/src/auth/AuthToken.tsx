@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+﻿import { useEffect } from 'react'
 import { useAuthStore } from '../store/auth-store'
 import { supabase } from '@renderer/config/supabase'
 import { ensureCloudUserProfile, fetchCloudUserProfile } from '@renderer/services/cloud-auth'
@@ -30,7 +30,7 @@ export default function AuthInitializer() {
           } else {
             setUser({
               id: session.user.id,
-              name: (session.user.user_metadata?.full_name as string) || 'IRIS User',
+              name: (session.user.user_metadata?.full_name as string) || 'ELI User',
               email: session.user.email || 'Not linked',
               tier: 'FREE',
               status: 'approved' as const,
@@ -75,7 +75,7 @@ export default function AuthInitializer() {
           } else {
             setUser({
               id: session.user.id,
-              name: (session.user.user_metadata?.full_name as string) || 'IRIS User',
+              name: (session.user.user_metadata?.full_name as string) || 'ELI User',
               email: session.user.email || 'Not linked',
               tier: 'FREE',
               status: 'approved' as const,

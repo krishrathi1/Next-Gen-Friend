@@ -1,7 +1,7 @@
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
+﻿import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useRef, useMemo } from 'react'
 import * as THREE from 'three'
-import { irisService } from '@renderer/services/Iris-voice-ai'
+import { eliService } from '@renderer/services/Eli-voice-ai'
 
 const CustomParticleSphere = ({ count = 3000 }) => {
   const mesh = useRef<THREE.Points>(null)
@@ -46,8 +46,8 @@ const CustomParticleSphere = ({ count = 3000 }) => {
     mesh.current.rotation.z += delta * 0.05
 
     let volume = 0
-    if (irisService.analyser) {
-      irisService.analyser.getByteFrequencyData(dataArray)
+    if (eliService.analyser) {
+      eliService.analyser.getByteFrequencyData(dataArray)
       const avg = dataArray.reduce((a, b) => a + b) / dataArray.length
       volume = avg / 128
     }
@@ -83,8 +83,8 @@ const CustomParticleSphere = ({ count = 3000 }) => {
     const poll = () => {
       if (disposed) return
       let avg = 0
-      if (irisService.analyser) {
-        irisService.analyser.getByteFrequencyData(dataArray)
+      if (eliService.analyser) {
+        eliService.analyser.getByteFrequencyData(dataArray)
         avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length
       }
 

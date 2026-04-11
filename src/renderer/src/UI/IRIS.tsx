@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState, Suspense, lazy } from 'react'
+﻿import { memo, useEffect, useRef, useState, Suspense, lazy } from 'react'
 import { unstable_batchedUpdates } from 'react-dom'
 import {
   RiAppsLine,
@@ -16,7 +16,7 @@ import {
   RiWifiLine
 } from 'react-icons/ri'
 import { getDrives, DriveInfo, getSystemStatus, SystemStats } from '@renderer/services/system-info'
-import { getHistory } from '@renderer/services/iris-ai-brain'
+import { getHistory } from '@renderer/services/ELI-AI-brain'
 import ViewSkeleton from '@renderer/components/ViewSkeleton'
 
 import DashboardView from '../views/Dashboard'

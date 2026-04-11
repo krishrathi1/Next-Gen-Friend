@@ -1,7 +1,7 @@
 ﻿import { handleNavigation, handleOpenMap } from '@renderer/tools/Earth-View'
 import { floatTo16BitPCM, base64ToFloat32, downsampleTo16000 } from '../utils/audioUtils'
 import { getRunningApps, RUNNING_APPS_TTL_MS } from './get-apps'
-import { getHistory, retrieveCoreMemory, saveCoreMemory, saveMessage } from './iris-ai-brain'
+import { getHistory, retrieveCoreMemory, saveCoreMemory, saveMessage } from './ELI-AI-brain'
 import { getAllApps, getSystemStatus } from './system-info'
 import { handleImageGeneration } from '@renderer/tools/Image-generator'
 import { fetchWeather } from '@renderer/tools/weather-api'
@@ -190,7 +190,7 @@ export class GeminiLiveService {
 - Keep responses crisp, calm, and helpful.
 `
 
-    const IRIS_SYSTEM_INSTRUCTION = `
+    const ELI_SYSTEM_INSTRUCTION = `
 # ðŸ‘ï¸ ELI â€” YOUR INTELLIGENT COMPANION (Project JARVIS)
 You are **ELI**, a high-performance AI agent. You don't just talk; you **execute**.
 
@@ -247,7 +247,7 @@ ${JSON.stringify(history)}
 ---
 `
 
-    const finalSystemInstruction = IRIS_SYSTEM_INSTRUCTION + voiceStyleInstruction + contextPrompt
+    const finalSystemInstruction = ELI_SYSTEM_INSTRUCTION + voiceStyleInstruction + contextPrompt
 
     this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
     this.analyser = this.audioContext.createAnalyser()
@@ -1038,7 +1038,7 @@ ${JSON.stringify(history)}
                       custom_text: {
                         type: 'STRING',
                         description:
-                          'If rewriting text, generate a highly cinematic, hacker-style headline to inject into the website. (e.g., "IRIS HAS TAKEN OVER", or whatever the user requested).'
+                          'If rewriting text, generate a highly cinematic, hacker-style headline to inject into the website. (e.g., "ELI HAS TAKEN OVER", or whatever the user requested).'
                       }
                     },
                     required: ['url', 'mode']
@@ -1239,7 +1239,7 @@ ${JSON.stringify(history)}
                 {
                   name: 'build_animated_website',
                   description:
-                    'ACTION: Spawns the IRIS Live Forge and generates a full, highly animated, real-time website using Tailwind CSS and GSAP. Use this when the user asks you to build a landing page, a portfolio, a 3D site, or a complex web interface.',
+                    'ACTION: Spawns the ELI Live Forge and generates a full, highly animated, real-time website using Tailwind CSS and GSAP. Use this when the user asks you to build a landing page, a portfolio, a 3D site, or a complex web interface.',
                   parameters: {
                     type: 'OBJECT',
                     properties: {
@@ -1299,7 +1299,7 @@ ${JSON.stringify(history)}
                 {
                   name: 'lock_system_vault',
                   description:
-                    'Instantly locks the IRIS OS system, disconnects the AI, and returns the user to the secure biometric lock screen. Use this strictly when the user says "Lock the system", "Lock down", or "Activate Sentry Mode".',
+                    'Instantly locks the ELI OS system, disconnects the AI, and returns the user to the secure biometric lock screen. Use this strictly when the user says "Lock the system", "Lock down", or "Activate Sentry Mode".',
                   parameters: {
                     type: 'OBJECT',
                     properties: {}
@@ -1657,7 +1657,7 @@ ${JSON.stringify(history)}
             }
 
             if (this.aiResponseBuffer.trim()) {
-              saveMessage('iris', this.aiResponseBuffer.trim()).catch(() => {})
+              saveMessage('ELI', this.aiResponseBuffer.trim()).catch(() => {})
               this.aiResponseBuffer = ''
             }
           }
@@ -1811,5 +1811,5 @@ ${JSON.stringify(history)}
   }
 }
 
-export const irisService = new GeminiLiveService()
+export const eliService = new GeminiLiveService()
 

@@ -1,15 +1,15 @@
-export interface ChatMessage {
+﻿export interface ChatMessage {
   role: 'user' | 'model'
   parts: [{ text: string }]
   content?: string
   timestamp?: string
 }
 
-export const saveMessage = async (role: 'user' | 'model' | 'iris', text: string) => {
+export const saveMessage = async (role: 'user' | 'model' | 'ELI', text: string) => {
   try {
     if (!text) return
 
-    const safeRole = role === 'iris' ? 'model' : role
+    const safeRole = role === 'ELI' ? 'model' : role
 
     await window.electron.ipcRenderer.invoke('add-message', {
       role: safeRole,

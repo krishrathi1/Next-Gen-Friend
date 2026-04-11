@@ -1,4 +1,4 @@
-export const ingestCodebase = async (dirPath: string): Promise<string> => {
+﻿export const ingestCodebase = async (dirPath: string): Promise<string> => {
   try {
     const geminiKey = localStorage.getItem('iris_custom_api_key') || ''
 

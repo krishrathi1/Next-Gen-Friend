@@ -1,4 +1,4 @@
-import { IpcMain } from 'electron'
+﻿import { IpcMain } from 'electron'
 import { Client } from '@notionhq/client'
 import { tavily } from '@tavily/core'
 import Groq from 'groq-sdk'
@@ -16,7 +16,7 @@ export default function registerDeepResearch({ ipcMain }: { ipcMain: IpcMain }) 
 
         event.sender.send('oracle-progress', {
           status: 'scanning',
-          file: 'IRIS and Tavily Neural Search Active...',
+          file: 'ELI and Tavily Neural Search Active...',
           totalFound: 1
         })
 
@@ -97,7 +97,7 @@ export default function registerDeepResearch({ ipcMain }: { ipcMain: IpcMain }) 
         const notion = new Client({ auth: notionKey })
         const newPage = await notion.pages.create({
           parent: { database_id: notionDbId },
-          properties: { Name: { title: [{ text: { content: `IRIS Deep-Dive: ${query}` } }] } },
+          properties: { Name: { title: [{ text: { content: `ELI Deep-Dive: ${query}` } }] } },
           children: notionChildren
         })
 
