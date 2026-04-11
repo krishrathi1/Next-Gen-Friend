@@ -38,16 +38,16 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
   const [activeTab, setActiveTab] = useState<TabType>('general')
 
   const [voice, setVoice] = useState<'MALE' | 'FEMALE'>(
-    (localStorage.getItem('iris_voice_profile') as 'MALE' | 'FEMALE') || 'FEMALE'
+    (localStorage.getItem('eli_voice_profile') as 'MALE' | 'FEMALE') || 'FEMALE'
   )
   const [personality, setPersonality] = useState('')
-  const [userName, setUserName] = useState(localStorage.getItem('iris_user_name') || '')
+  const [userName, setUserName] = useState(localStorage.getItem('eli_user_name') || '')
 
-  const [geminiKey, setGeminiKey] = useState(localStorage.getItem('iris_custom_api_key') || '')
-  const [groqKey, setGroqKey] = useState(localStorage.getItem('iris_groq_api_key') || '')
-  const [hfKey, setHfKey] = useState(localStorage.getItem('iris_hf_api_key') || '')
-  const [notionKey, setNotionKey] = useState(localStorage.getItem('iris_notion_api_key') || '')
-  const [tailvyKey, setTailvyKey] = useState(localStorage.getItem('iris_tailvy_api_key') || '')
+  const [geminiKey, setGeminiKey] = useState(localStorage.getItem('eli_custom_api_key') || '')
+  const [groqKey, setGroqKey] = useState(localStorage.getItem('eli_groq_api_key') || '')
+  const [hfKey, setHfKey] = useState(localStorage.getItem('eli_hf_api_key') || '')
+  const [notionKey, setNotionKey] = useState(localStorage.getItem('eli_notion_api_key') || '')
+  const [tailvyKey, setTailvyKey] = useState(localStorage.getItem('eli_tailvy_api_key') || '')
 
   const [isSecurityUnlocked, setIsSecurityUnlocked] = useState(false)
   const [hasVaultPin, setHasVaultPin] = useState(true)
@@ -99,7 +99,7 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
 
   const handleVoiceChange = (v: 'MALE' | 'FEMALE') => {
     setVoice(v)
-    localStorage.setItem('iris_voice_profile', v)
+    localStorage.setItem('eli_voice_profile', v)
   }
 
   const handlePersonalityChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -117,7 +117,7 @@ const SettingsView = ({ isSystemActive }: SettingsProps) => {
   }
 
   const saveUserName = () => {
-    localStorage.setItem('iris_user_name', userName)
+    localStorage.setItem('eli_user_name', userName)
     setSavedUser(true)
     setTimeout(() => setSavedUser(false), 2000)
   }

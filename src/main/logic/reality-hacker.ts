@@ -80,7 +80,7 @@ export default function registerRealityHacker(ipcMain: IpcMain) {
               white-space: nowrap;
             }
 
-            #iris-override-banner {
+            #eli-override-banner {
               position: fixed;
               top: 0; left: 0; width: 100vw;
               background: #6b21a8;
@@ -97,7 +97,7 @@ export default function registerRealityHacker(ipcMain: IpcMain) {
           document.head.appendChild(style);
 
           const banner = document.createElement('div');
-          banner.id = 'iris-override-banner';
+          banner.id = 'eli-override-banner';
           banner.innerText = '⚠️ NETWORK COMPROMISED // ELI HAS ASSIMILATED THIS DOMAIN ⚠️';
           document.body.appendChild(banner);
         `
@@ -112,8 +112,8 @@ export default function registerRealityHacker(ipcMain: IpcMain) {
             selectors.forEach(selector => {
               const logos = document.querySelectorAll(selector);
               logos.forEach(logo => {
-                if (!logo.classList.contains('iris-hacked')) {
-                  logo.classList.add('iris-hacked');
+                if (!logo.classList.contains('eli-hacked')) {
+                  logo.classList.add('eli-hacked');
                   logo.style.visibility = 'hidden'; 
                   
                   const newLogo = document.createElement('div');

@@ -29,8 +29,8 @@ type DeviceHistoryEntry = {
 }
 
 const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
-  const [ip, setIp] = useState(() => localStorage.getItem('iris_adb_ip') || '')
-  const [port, setPort] = useState(() => localStorage.getItem('iris_adb_port') || '5555')
+  const [ip, setIp] = useState(() => localStorage.getItem('eli_adb_ip') || '')
+  const [port, setPort] = useState(() => localStorage.getItem('eli_adb_port') || '5555')
   const [status, setStatus] = useState<'idle' | 'connecting' | 'connected'>('idle')
   const [uiMode, setUiMode] = useState<'history' | 'manual'>('history')
   const [errorMsg, setErrorMsg] = useState('')
@@ -109,8 +109,8 @@ const PhoneView = ({ glassPanel }: { glassPanel?: string }) => {
     if (!normalizedIp || !normalizedPort) return setErrorMsg('IP and Port are required.')
     setIp(normalizedIp)
     setPort(normalizedPort)
-    localStorage.setItem('iris_adb_ip', normalizedIp)
-    localStorage.setItem('iris_adb_port', normalizedPort)
+    localStorage.setItem('eli_adb_ip', normalizedIp)
+    localStorage.setItem('eli_adb_port', normalizedPort)
     if (modelHint && modelHint.trim()) {
       setSelectedDeviceModel(modelHint.trim().toUpperCase())
     }

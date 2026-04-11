@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import Editor, { useMonaco } from '@monaco-editor/react'
 import { FileCode2, ExternalLink, X, Sparkles } from 'lucide-react'
 
@@ -12,13 +12,13 @@ export default function LiveCodingWidget() {
 
   useEffect(() => {
     if (monaco) {
-      monaco.editor.defineTheme('iris-dark', {
+      monaco.editor.defineTheme('eli-dark', {
         base: 'vs-dark',
         inherit: true,
         rules: [{ token: 'comment', foreground: '10b981', fontStyle: 'italic' }],
         colors: { 'editor.background': '#00000000' }
       })
-      monaco.editor.setTheme('iris-dark')
+      monaco.editor.setTheme('eli-dark')
     }
   }, [monaco])
 
@@ -29,7 +29,7 @@ export default function LiveCodingWidget() {
       setIsVisible(true)
       setIsGenerating(true)
 
-      const geminiKey = localStorage.getItem('iris_custom_api_key') || ''
+      const geminiKey = localStorage.getItem('eli_custom_api_key') || ''
 
       if (!geminiKey.trim()) {
         setCode(
@@ -106,7 +106,7 @@ export default function LiveCodingWidget() {
           <Editor
             height="100%"
             language={filename.endsWith('.py') ? 'python' : 'typescript'}
-            theme="iris-dark"
+            theme="eli-dark"
             value={code}
             options={{
               readOnly: true,

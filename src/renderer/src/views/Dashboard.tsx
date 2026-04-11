@@ -22,7 +22,7 @@ import { VisionMode } from '@renderer/IndexRoot'
 import { DriveInfo, SystemStats } from '@renderer/services/system-info'
 import { ensureFaceModelsLoaded } from '@renderer/services/face-models'
 
-interface IrisProps {
+interface EliProps {
   isSystemActive: boolean
   toggleSystem: () => void
   isMicMuted: boolean
@@ -42,7 +42,7 @@ type TranscriptMessage = {
 }
 
 interface DashboardViewProps {
-  props: IrisProps
+  props: EliProps
   stats: SystemStats | null
   networkRttMs: number | null
   networkDownlinkMbps: number | null

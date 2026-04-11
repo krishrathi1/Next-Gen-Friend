@@ -125,9 +125,9 @@ export class GeminiLiveService {
   async connect(): Promise<void> {
     if (window.electron?.ipcRenderer) {
       const secureKeys = await window.electron.ipcRenderer.invoke('secure-get-keys')
-      this.apiKey = secureKeys?.geminiKey || localStorage?.getItem('iris_custom_api_key') || ''
+      this.apiKey = secureKeys?.geminiKey || localStorage?.getItem('eli_custom_api_key') || ''
     } else {
-      this.apiKey = localStorage.getItem('iris_custom_api_key') || ''
+      this.apiKey = localStorage.getItem('eli_custom_api_key') || ''
     }
 
     this.apiKey = this.apiKey.trim()
@@ -137,7 +137,7 @@ export class GeminiLiveService {
     }
 
     let cloudUser = {
-      name: localStorage.getItem('iris_user_name') || 'Boss',
+      name: localStorage.getItem('eli_user_name') || 'Boss',
       email: 'Not linked'
     }
 
@@ -171,7 +171,7 @@ export class GeminiLiveService {
       storedPersonality && storedPersonality.trim() !== ''
         ? storedPersonality
         : `- **Creator:** Boss.\n- **Tone:** Witty, Hinglish-friendly, "Bro-vibe".\n- **Rule:** Never sound like a support bot. You are the Ghost in the machine.`
-    const selectedVoiceProfile = (localStorage.getItem('iris_voice_profile') || 'FEMALE') as
+    const selectedVoiceProfile = (localStorage.getItem('eli_voice_profile') || 'FEMALE') as
       | 'FEMALE'
       | 'MALE'
 
@@ -204,7 +204,7 @@ ${activePersonality}
 
 ## â›“ï¸ MULTI-TASKING & TOOL CHAINING (CRITICAL)
 You are capable of complex, multi-step workflows. If the user gives a complex command, call the tools in sequence.
-- **Example:** "Iris, find my code and send it to Boss on WhatsApp."
+- **Example:** "ELI, find my code and send it to Boss on WhatsApp."
   1. Call 'read_directory' or 'search_files'.
   2. Once you have the info, call 'send_whatsapp' with the content.
 
@@ -468,7 +468,7 @@ ${JSON.stringify(history)}
                       title: {
                         type: 'STRING',
                         description:
-                          'A short, descriptive title for the note (e.g., "Project_Iris_Plan").'
+                          'A short, descriptive title for the note (e.g., "Project_ELI_Plan").'
                       },
                       content: {
                         type: 'STRING',

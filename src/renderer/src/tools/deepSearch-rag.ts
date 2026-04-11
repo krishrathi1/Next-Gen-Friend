@@ -3,10 +3,10 @@
     window.dispatchEvent(new CustomEvent('deep-research-start', { detail: { query } }))
 
     const secureKeys = await window.electron.ipcRenderer.invoke('secure-get-keys').catch(() => null)
-    const tavilyKey = secureKeys?.tavilyKey || localStorage.getItem('iris_tailvy_api_key') || ''
-    const notionKey = secureKeys?.notionKey || localStorage.getItem('iris_notion_api_key') || ''
-    const notionDbId = localStorage.getItem('iris_notion_db_id') || ''
-    const groqKey = secureKeys?.groqKey || localStorage.getItem('iris_groq_api_key') || ''
+    const tavilyKey = secureKeys?.tavilyKey || localStorage.getItem('eli_tailvy_api_key') || ''
+    const notionKey = secureKeys?.notionKey || localStorage.getItem('eli_notion_api_key') || ''
+    const notionDbId = localStorage.getItem('eli_notion_db_id') || ''
+    const groqKey = secureKeys?.groqKey || localStorage.getItem('eli_groq_api_key') || ''
 
     const result = await window.electron.ipcRenderer.invoke('execute-deep-research', {
       query,
@@ -35,8 +35,8 @@
 export const runReadNotion = async (): Promise<string> => {
   try {
     const secureKeys = await window.electron.ipcRenderer.invoke('secure-get-keys').catch(() => null)
-    const notionKey = secureKeys?.notionKey || localStorage.getItem('iris_notion_api_key') || ''
-    const notionDbId = localStorage.getItem('iris_notion_db_id') || ''
+    const notionKey = secureKeys?.notionKey || localStorage.getItem('eli_notion_api_key') || ''
+    const notionDbId = localStorage.getItem('eli_notion_db_id') || ''
 
     const result = await window.electron.ipcRenderer.invoke('read-notion-reports', {
       notionKey,

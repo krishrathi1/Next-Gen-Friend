@@ -3,8 +3,8 @@ import type { Session, User } from '@supabase/supabase-js'
 import type { CloudUserProfile } from '@renderer/store/auth-store'
 
 const DEFAULT_REDIRECT = 'http://127.0.0.1:54321/auth/callback'
-const OAUTH_INTENT_KEY = 'iris.oauth.intent'
-const AUTH_FLASH_KEY = 'iris.auth.flash'
+const OAUTH_INTENT_KEY = 'eli.oauth.intent'
+const AUTH_FLASH_KEY = 'eli.auth.flash'
 
 export type OAuthMode = 'signin' | 'signup'
 export type AuthFlashMessage = { type: 'error' | 'success'; text: string }

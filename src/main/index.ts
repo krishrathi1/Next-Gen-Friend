@@ -81,7 +81,7 @@ const OVERLAY_WIDTH = 490
 const OVERLAY_HEIGHT = 64
 const OVERLAY_BOTTOM_OFFSET = 34
 
-function extractIrisUrl(argv: string[]): string | null {
+function extractEliUrl(argv: string[]): string | null {
   return argv.find((arg) => typeof arg === 'string' && arg.startsWith('eli://')) || null
 }
 
@@ -168,7 +168,7 @@ app.on('second-instance', (event, commandLine) => {
     if (mainWindow.isMinimized()) mainWindow.restore()
     mainWindow.focus()
   }
-  const url = extractIrisUrl(commandLine)
+  const url = extractEliUrl(commandLine)
   if (url) forwardOAuthCallback(url)
 })
 
@@ -383,7 +383,7 @@ app.whenReady().then(() => {
 
   createWindow()
 
-  const startupUrl = extractIrisUrl(process.argv)
+  const startupUrl = extractEliUrl(process.argv)
   if (startupUrl) {
     forwardOAuthCallback(startupUrl)
   }

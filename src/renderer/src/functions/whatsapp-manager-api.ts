@@ -1,5 +1,5 @@
-﻿const LAST_WHATSAPP_CONTACT_KEY = 'iris_last_whatsapp_contact'
-const LAST_MESSAGING_CONTEXT_KEY = 'iris_last_messaging_context'
+﻿const LAST_WHATSAPP_CONTACT_KEY = 'eli_last_whatsapp_contact'
+const LAST_MESSAGING_CONTEXT_KEY = 'eli_last_messaging_context'
 
 const resolveRecipientName = (rawName: string): string => {
   const incoming = (rawName || '').trim()
