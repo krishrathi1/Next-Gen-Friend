@@ -13,7 +13,8 @@ import {
   RiPhoneLine,
   RiSettings4Line,
   RiShieldFlashLine,
-  RiWifiLine
+  RiWifiLine,
+  RiVoiceprintLine
 } from 'react-icons/ri'
 import { getDrives, DriveInfo, getSystemStatus, SystemStats } from '@renderer/services/system-info'
 import { getHistory } from '@renderer/services/iris-ai-brain'
@@ -49,6 +50,7 @@ const TABS = [
   { id: 'APPS', label: 'Apps', icon: <RiAppsLine size={14} /> },
   { id: 'GALLERY', label: 'Gallery', icon: <RiImageLine size={14} /> },
   { id: 'PHONE', label: 'Phone', icon: <RiPhoneLine size={14} /> },
+  { id: 'SPEECH', label: 'Speech Intelligence', icon: <RiVoiceprintLine size={14} /> },
   { id: 'SETTINGS', label: 'Settings', icon: <RiSettings4Line size={14} /> }
 ]
 
@@ -258,7 +260,13 @@ const ELI = (props: EliProps) => {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  if (tab.id === 'SPEECH') {
+                    window.dispatchEvent(new CustomEvent('speech-comparison-start'))
+                  } else {
+                    setActiveTab(tab.id)
+                  }
+                }}
                 className={`relative cursor-pointer px-4 py-1.5 text-[11px] font-semibold tracking-wide rounded-lg transition-all duration-200 flex items-center gap-1.5 ${
                   isActive
                     ? 'bg-violet-600/15 text-violet-300 border border-violet-500/20 shadow-[0_0_12px_rgba(124,58,237,0.1)]'

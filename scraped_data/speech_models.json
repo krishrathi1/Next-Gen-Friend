@@ -1,0 +1,70 @@
+[
+  {
+    "model_id": "personal-stt",
+    "scraped_at": "2026-04-28T23:30:00Z",
+    "source": "https://huggingface.co/fractalego/personal-speech-to-text-model",
+    "raw_data": "fractalego/personal-speech-to-text-model is a fine-tuned version of wav2vec2-large-xlsr-53. It was specifically optimized for individual voice profiles and noisy environments. Total parameters: 315M. It uses the Apache 2.0 license. The model shows significant improvements in Word Error Rate (WER) for personalized datasets compared to general-purpose models.",
+    "structured_data": {
+      "name": "personal-speech-to-text-model",
+      "author": "fractalego",
+      "type": "Automatic Speech Recognition (ASR)",
+      "category": "ASR",
+      "parameters": "315M",
+      "size_mb": 1260,
+      "license": "Apache 2.0",
+      "tech_stack": ["Wav2Vec2", "XLSR-53", "PyTorch"],
+      "features": ["Personalized fine-tuning", "Noise robustness", "Low WER"]
+    }
+  },
+  {
+    "model_id": "nemocurator-filter",
+    "scraped_at": "2026-04-28T23:30:00Z",
+    "source": "https://huggingface.co/nvidia/nemocurator-speech-bandwidth-filter",
+    "raw_data": "The nemocurator-speech-bandwidth-filter is a utility model for speech data curation. It is a lightweight Scikit-learn Random Forest classifier (0.14 MB) used to detect high-quality speech samples for training larger models. Distributed under NVIDIA Community and Apache 2.0. Key tool for bandwidth-based filtering in NeMo Curator pipelines.",
+    "structured_data": {
+      "name": "nemocurator-speech-bandwidth-filter",
+      "author": "nvidia",
+      "type": "Speech Filtering / Classification",
+      "category": "Filter",
+      "parameters": "N/A (Random Forest)",
+      "size_mb": 0.144,
+      "license": "NVIDIA Community",
+      "tech_stack": ["Scikit-learn", "Random Forest", "NeMo Curator"],
+      "features": ["Data curation", "Bandwidth filtering", "Real-time classification"]
+    }
+  },
+  {
+    "model_id": "fish-speech-1-5",
+    "scraped_at": "2026-04-28T23:30:00Z",
+    "source": "https://huggingface.co/fishaudio/fish-speech-1.5",
+    "raw_data": "Fish Speech 1.5 is a leading-edge Text-to-Speech model featuring a Dual AR architecture. It has been trained on over 1 million hours of multi-lingual audio data, supporting 13 languages including English, Chinese, Japanese, and more. The model size is approximately 1.47 GB and it utilizes a Firefly GAN based vocoder for high-fidelity output. License: CC-BY-NC-SA 4.0. It aims to bridge the gap between human and machine speech quality.",
+    "structured_data": {
+      "name": "fish-speech-1.5",
+      "author": "fishaudio",
+      "type": "Text-to-Speech (TTS)",
+      "category": "TTS",
+      "parameters": "1.4B",
+      "size_mb": 1470,
+      "license": "CC-BY-NC-SA 4.0",
+      "tech_stack": ["Dual AR", "Firefly GAN", "Transformers"],
+      "features": ["13 Languages", "High-fidelity synthesis", "1M+ training hours"]
+    }
+  },
+  {
+    "model_id": "nemotron-streaming",
+    "scraped_at": "2026-04-28T23:30:00Z",
+    "source": "https://huggingface.co/nvidia/nemotron-speech-streaming-en-0.6b",
+    "raw_data": "NVIDIA's Nemotron-Speech-Streaming-En-0.6b is a 600M parameter Automatic Speech Recognition (ASR) model. It is built on the Cache-Aware FastConformer-RNNT architecture, optimized for low-latency real-time streaming. It achieves state-of-the-art performance on LibriSpeech. The model is released under the NVIDIA Open Model License. Supports various chunk sizes from 80ms to 1120ms.",
+    "structured_data": {
+      "name": "nemotron-speech-streaming-en-0.6b",
+      "author": "nvidia",
+      "type": "Streaming ASR",
+      "category": "ASR",
+      "parameters": "600M",
+      "size_mb": 2400,
+      "license": "NVIDIA Open Model License",
+      "tech_stack": ["FastConformer-RNNT", "NeMo", "Cache-Aware"],
+      "features": ["Real-time streaming", "80ms low latency", "High accuracy"]
+    }
+  }
+]

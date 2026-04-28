@@ -15,6 +15,7 @@ import OracleWidget from './Widgets/RagOracleWidget'
 import ResearchWidget from './Widgets/DeepResearch'
 import SemanticWidget from './Widgets/SemanticSearch'
 import SmartDropZonesWidget from './Widgets/SmartZoneWidget'
+import SpeechComparisonWidget from './Widgets/SpeechComparisonWidget'
 import TitleBar from './components/Titlebar'
 import ToastHost from './components/ToastHost'
 import { useToastStore } from './store/toast-store'
@@ -35,6 +36,7 @@ type WidgetKey =
   | 'terminal'
   | 'livecoding'
   | 'research'
+  | 'speech-comparison'
 
 const IndexRoot = () => {
   const [isOverlay, setIsOverlay] = useState(false)
@@ -132,7 +134,8 @@ const IndexRoot = () => {
       { name: 'show-emails', widget: 'email' },
       { name: 'ai-start-coding', widget: 'livecoding' },
       { name: 'ai-open-vscode', widget: 'livecoding' },
-      { name: 'deep-research-start', widget: 'research' }
+      { name: 'deep-research-start', widget: 'research' },
+      { name: 'speech-comparison-start', widget: 'speech-comparison' }
     ]
 
     const cleanups: Array<() => void> = []
@@ -141,6 +144,17 @@ const IndexRoot = () => {
       window.addEventListener(name, handler)
       cleanups.push(() => window.removeEventListener(name, handler))
     })
+
+    const closeHandler = () => {
+      setMountedWidgets((prev) => {
+        const next = new Set(prev)
+        next.delete('speech-comparison')
+        mountedWidgetsRef.current = next
+        return next
+      })
+    }
+    window.addEventListener('speech-comparison-close', closeHandler)
+    cleanups.push(() => window.removeEventListener('speech-comparison-close', closeHandler))
 
     return () => cleanups.forEach((fn) => fn())
   }, [])
@@ -314,6 +328,7 @@ const IndexRoot = () => {
       {mountedWidgets.has('terminal') && <TerminalOverlay />}
       {mountedWidgets.has('livecoding') && <LiveCodingWidget />}
       {mountedWidgets.has('research') && <ResearchWidget />}
+      {mountedWidgets.has('speech-comparison') && <SpeechComparisonWidget />}
       <ToastHost />
     </div>
   )
