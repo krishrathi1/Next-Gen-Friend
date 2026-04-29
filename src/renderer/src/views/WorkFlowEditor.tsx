@@ -128,7 +128,7 @@ function Editor() {
   const [chatPrompt, setChatPrompt] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [chatMessages, setChatMessages] = useState<any[]>([
-    { role: 'ai', text: 'Hello! I am your Workflow Architect. Tell me what automation you want to build, and I will generate the structure for you.' }
+    { role: 'ai', text: 'Hello! I am your Graph RAG Architect. I retrieve system capabilities to generate optimized automation graphs for you.' }
   ])
 
   const addToast = useToastStore((s) => s.addToast)
@@ -699,7 +699,7 @@ RULES:
               <div className="px-4 py-3 border-b border-white/[0.05] flex items-center justify-between bg-white/[0.02]">
                 <div className="flex items-center gap-2.5">
                   <RiBrainLine size={16} className="text-violet-400" />
-                  <span className="text-[11px] font-black tracking-widest text-zinc-300 uppercase">Workflow Architect</span>
+                  <span className="text-[11px] font-black tracking-widest text-zinc-300 uppercase">Graph RAG Architect</span>
                 </div>
                 <button onClick={() => setIsChatOpen(false)} className="text-zinc-500 hover:text-white transition-colors cursor-pointer">
                   <RiCloseLine size={18} />
@@ -723,7 +723,7 @@ RULES:
                   <div className="flex justify-start">
                     <div className="bg-white/[0.03] border border-white/[0.06] px-3 py-2 rounded-xl flex items-center gap-2">
                       <RiLoader4Line size={12} className="animate-spin text-violet-500" />
-                      <span className="text-[10px] text-zinc-500 font-mono italic">Thinking...</span>
+                      <span className="text-[10px] text-zinc-500 font-mono italic">Retrieving Graph Context...</span>
                     </div>
                   </div>
                 )}

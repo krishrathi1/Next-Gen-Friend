@@ -250,7 +250,6 @@ const ELI = (props: EliProps) => {
           </div>
           <div className="flex flex-col leading-none">
             <span className="font-bold tracking-[0.15em] text-[13px] text-white">ELI AI</span>
-            <span className="text-[9px] font-medium text-violet-400/50 tracking-[0.2em] uppercase">Neural Interface</span>
           </div>
         </div>
 
