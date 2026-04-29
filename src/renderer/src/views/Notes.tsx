@@ -2,15 +2,11 @@ import { useState, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
-  RiStickyNoteLine,
-  RiFileTextLine,
-  RiMarkdownLine,
-  RiAddLine,
-  RiSave3Line,
-  RiCloseLine,
   RiEditLine,
-  RiCalendarLine
+  RiCalendarLine,
+  RiNodeTree
 } from 'react-icons/ri'
+import AIChatPanel from '@renderer/components/AIChatPanel'
 
 interface Note {
   filename: string
@@ -246,6 +242,56 @@ const NotesView = ({ glassPanel }: { glassPanel?: string }) => {
           </div>
         )}
       </div>
+
+      <AIChatPanel
+        title="Creative Intel Agent"
+        initialMessage="Hello! I am your Creative Intel Agent. I can help you search, summarize, or generate new ideas within your Memory Bank. What can I help you remember today?"
+        contextInfo="Powered by Llama 3.2 | Memory Bank Graph Context"
+        icon={<RiNodeTree size={16} className="text-violet-400" />}
+        onGenerate={async (prompt, addMessage) => {
+          try {
+            const check = await fetch('http://localhost:11434/api/tags')
+            if (!check.ok) throw new Error()
+
+            const systemPrompt = `You are an IRIS-AI Creative Assistant. 
+Your goal is to help the user manage their notes (Memory Bank).
+
+CURRENT NOTES TITLES:
+${JSON.stringify(notes.map(n => n.title), null, 2)}
+
+RULES:
+1. If the user asks for a summary or to find something, refer to the titles.
+2. If the user wants to create a new note, suggest a title and content.
+3. Output ONLY JSON with "response" (string) and "suggestedNote" (object with title and content or null).`
+
+            const response = await fetch('http://localhost:11434/api/generate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                model: 'llama3.2',
+                prompt: `${systemPrompt}\n\nUser Request: ${prompt}`,
+                stream: false,
+                format: 'json',
+                options: { temperature: 0.3 }
+              })
+            })
+
+            const data = await response.json()
+            const aiJson = JSON.parse(data.response)
+
+            addMessage('ai', aiJson.response)
+
+            if (aiJson.suggestedNote) {
+              setNewTitle(aiJson.suggestedNote.title)
+              setNewContent(aiJson.suggestedNote.content)
+              setIsEditorOpen(true)
+              addMessage('ai', `✨ I've drafted a new note for you: "${aiJson.suggestedNote.title}". You can see it in the editor.`)
+            }
+          } catch (e: any) {
+            throw new Error('Ollama is not responding or failed to process notes context.')
+          }
+        }}
+      />
     </div>
   )
 }

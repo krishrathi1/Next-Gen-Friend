@@ -1,14 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
-  RiAppsLine,
-  RiTerminalBoxLine,
-  RiChromeLine,
-  RiCodeLine,
-  RiSpotifyLine,
-  RiDiscordLine,
-  RiGamepadLine
+  RiGamepadLine,
+  RiSearchLine,
+  RiCpuLine
 } from 'react-icons/ri'
 import { getAllApps, AppItem } from '@renderer/services/system-info'
+import AIChatPanel from '@renderer/components/AIChatPanel'
+import { useToastStore } from '@renderer/store/toast-store'
 
 const SmartIcon = ({ name }: { name: string }) => {
   if (!name) return <div className="w-9 h-9 bg-white/[0.03] rounded-xl border border-white/[0.06]" />
@@ -167,6 +165,61 @@ const AppsView = () => {
           )}
         </div>
       </div>
+
+      <AIChatPanel
+        title="App Discovery Agent"
+        initialMessage="Hello! I am your AI App Discovery Agent. I can help you find, suggest, or launch any software in your library. What are you looking for?"
+        contextInfo="Powered by Llama 3.2 | Real-time Software Index"
+        icon={<RiCpuLine size={16} className="text-violet-400" />}
+        onGenerate={async (prompt, addMessage) => {
+          try {
+            // 1. Check if Ollama is reachable
+            const check = await fetch('http://localhost:11434/api/tags')
+            if (!check.ok) throw new Error()
+
+            const systemPrompt = `You are an IRIS-AI App Management Expert. 
+Your goal is to help users find and launch applications from their installed list.
+
+INSTALLED APPS:
+${JSON.stringify(allApps.map(a => a.name), null, 2)}
+
+RULES:
+1. If the user wants to open an app, identify the most likely match from the list.
+2. If you find a match, output the app name in brackets like [APP_NAME].
+3. Provide a brief, helpful response.
+4. Output ONLY JSON with "response" and "launchApp" (string or null).`
+
+            const response = await fetch('http://localhost:11434/api/generate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                model: 'llama3.2',
+                prompt: `${systemPrompt}\n\nUser Request: ${prompt}`,
+                stream: false,
+                format: 'json',
+                options: { temperature: 0.2 }
+              })
+            })
+
+            const data = await response.json()
+            const aiJson = JSON.parse(data.response)
+
+            addMessage('ai', aiJson.response)
+
+            if (aiJson.launchApp) {
+              const appToLaunch = allApps.find(a => a.name.toLowerCase().includes(aiJson.launchApp.toLowerCase()))
+              if (appToLaunch) {
+                window.electron.ipcRenderer.invoke('open-app', appToLaunch.name)
+                addMessage('ai', `🚀 Launching ${appToLaunch.name}...`)
+              } else {
+                addMessage('ai', `⚠️ I couldn't find an exact match for "${aiJson.launchApp}" in your library.`)
+              }
+            }
+          } catch (e: any) {
+            throw new Error(e.message.includes('Ollama') ? 'Ollama is not running.' : 'Failed to process request.')
+          }
+        }}
+      />
     </div>
   )
 }
