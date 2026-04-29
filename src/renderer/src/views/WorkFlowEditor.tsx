@@ -731,12 +731,18 @@ RULES:
 
               {/* Chat Input */}
               <div className="p-3 border-t border-white/[0.05] bg-black/20">
-                <div className="relative flex items-center bg-white/[0.03] border border-white/[0.08] rounded-xl px-3 py-2 focus-within:border-violet-500/40 transition-colors">
+                <div 
+                  className="relative flex items-center bg-white/[0.03] border border-white/[0.08] rounded-xl px-3 py-2 focus-within:border-violet-500/40 transition-colors"
+                  onKeyDown={(e) => e.stopPropagation()}
+                >
                   <input
                     type="text"
                     value={chatPrompt}
                     onChange={(e) => setChatPrompt(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAIGenerate()}
+                    onKeyDown={(e) => {
+                      e.stopPropagation()
+                      if (e.key === 'Enter') handleAIGenerate()
+                    }}
                     placeholder="Describe your workflow..."
                     className="flex-1 bg-transparent border-none outline-none text-[11px] text-zinc-200 placeholder:text-zinc-700"
                   />
