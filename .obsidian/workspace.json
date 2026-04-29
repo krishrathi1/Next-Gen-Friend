@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "node_modules/ast-types/README.md",
+                "file": "node_modules/xhr/CONTRIBUTING.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "README"
+              "title": "CONTRIBUTING"
             }
           }
         ]
@@ -185,7 +185,21 @@
   },
   "active": "7a175056f94bdd35",
   "lastOpenFiles": [
-    "generate_big_json.py",
-    "llama_reasoning_context.json"
+    "node_modules/node-gyp/CODE_OF_CONDUCT.md",
+    "out/renderer/index.html",
+    "out/renderer/assets/WorkFlowEditor-DyWU6CE6.js",
+    "out/renderer/assets/WorkFlowEditor-4penBS1k.css",
+    "out/renderer/assets/three-DA90j5AS.js",
+    "out/renderer/assets/Notes-DnvhkkVs.js",
+    "out/renderer/assets/Settings-CQT5F7PE.js",
+    "out/renderer/assets/motion-DcyJV31V.js",
+    "out/renderer/assets/map-BQfMqsjH.js",
+    "out/renderer/assets/index-BCecIg_n.css",
+    "out/renderer/assets/index-7RD5SkgL.js",
+    "resources/icon.png",
+    "node_modules/tesseract.js/docs/image-format.md",
+    "generated_graphs/final_radar.png",
+    "node_modules/@electron/notarize/node_modules/fs-extra/README.md",
+    "node_modules/ast-types/README.md"
   ]
 }
