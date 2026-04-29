@@ -35,6 +35,7 @@ import {
 import { useToastStore } from '@renderer/store/toast-store'
 
 import { getMacroSequence } from '@renderer/code/macro-executor'
+import { MacroGraphRAG } from '../services/GraphRAGService'
 import {
   clickOnCoordinate,
   scrollScreen,
@@ -108,6 +109,9 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 const ALL_TOOLS = Object.values(CATEGORIZED_TOOLS).flat()
 const nodeTypes = { customTool: ToolNode }
+
+// Initialize Graph RAG Engine
+const graphRAG = new MacroGraphRAG(CATEGORIZED_TOOLS)
 
 function Editor() {
   const [nodes, setNodes] = useState<any[]>([])
@@ -337,11 +341,17 @@ function Editor() {
         throw new Error('Ollama is not running. Please start Ollama on your PC to use this feature.')
       }
 
-      const systemPrompt = `You are an IRIS-AI Workflow Architect. 
-Generate a valid JSON automation workflow. 
+      // 1. Graph RAG Retrieval (Tool Selection)
+      const graphResult = await graphRAG.search(userMsg)
+      
+      const systemPrompt = `You are the IRIS-AI Graph RAG Architect. 
+Generate a valid JSON automation workflow based on retrieved context.
 
-AVAILABLE TOOLS:
-${JSON.stringify(CATEGORIZED_TOOLS, null, 2)}
+RELEVANT TOOLS (Retrieved from Domain Graph):
+${JSON.stringify(graphResult.context.length > 0 ? graphResult.context : CATEGORIZED_TOOLS, null, 2)}
+
+SUGGESTED SEQUENCE PATTERNS:
+${graphResult.suggestions.join(' -> ')}
 
 OUTPUT ONLY THIS JSON STRUCTURE:
 {
@@ -352,9 +362,8 @@ OUTPUT ONLY THIS JSON STRUCTURE:
 }
 
 RULES:
-1. Every node must have id, type="customTool", and a valid tool name from the list.
-2. Connect them with edges.
-3. Output ONLY the JSON object.`
+1. Use the retrieved context to select the best tools.
+2. Output ONLY the JSON object.`
 
       const response = await fetch('http://localhost:11434/api/generate', {
         method: 'POST',
