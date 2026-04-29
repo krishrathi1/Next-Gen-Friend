@@ -1,4 +1,4 @@
-﻿import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback } from 'react'
 import ReactFlow, {
   addEdge,
   Background,
@@ -27,7 +27,10 @@ import {
   RiStopFill,
   RiLoader4Line,
   RiFileTextLine,
-  RiFlowChart
+  RiFlowChart,
+  RiMessage3Line,
+  RiSendPlane2Line,
+  RiCloseLine
 } from 'react-icons/ri'
 import { useToastStore } from '@renderer/store/toast-store'
 
@@ -119,6 +122,15 @@ function Editor() {
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set())
   const [isRunning, setIsRunning] = useState(false)
   const [runProgress, setRunProgress] = useState<{ current: number; total: number; step: string } | null>(null)
+  
+  // AI Chat State
+  const [isChatOpen, setIsChatOpen] = useState(false)
+  const [chatPrompt, setChatPrompt] = useState('')
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [chatMessages, setChatMessages] = useState<any[]>([
+    { role: 'ai', text: 'Hello! I am your Workflow Architect. Tell me what automation you want to build, and I will generate the structure for you.' }
+  ])
+
   const addToast = useToastStore((s) => s.addToast)
 
   const openParameterEditor = useCallback((nodeId: string) => setSelectedNodeId(nodeId), [])
@@ -306,6 +318,119 @@ function Editor() {
     setIsRunning(false)
     setRunProgress({ current: totalSteps, total: totalSteps, step: 'COMPLETE' })
     setTimeout(() => setRunProgress(null), 3000)
+  }
+
+  const handleAIGenerate = async () => {
+    if (!chatPrompt.trim() || isGenerating) return
+    
+    const userMsg = chatPrompt
+    setChatMessages(prev => [...prev, { role: 'user', text: userMsg }])
+    setChatPrompt('')
+    setIsGenerating(true)
+
+    try {
+      // 1. Check if Ollama is reachable
+      try {
+        const check = await fetch('http://localhost:11434/api/tags')
+        if (!check.ok) throw new Error()
+      } catch (e) {
+        throw new Error('Ollama is not running. Please start Ollama on your PC to use this feature.')
+      }
+
+      const systemPrompt = `You are an IRIS-AI Workflow Architect. 
+Your goal is to generate a valid JSON structure for an automation workflow.
+
+AVAILABLE TOOLS (USE ONLY THESE NAMES):
+${JSON.stringify(CATEGORIZED_TOOLS, null, 2)}
+
+STRICT JSON FORMAT:
+{
+  "nodes": [
+    {
+      "id": "node_1",
+      "type": "customTool",
+      "position": { "x": 0, "y": 0 },
+      "data": { "tool": { "name": "TRIGGER" }, "inputs": {} }
+    },
+    {
+      "id": "node_2",
+      "type": "customTool",
+      "position": { "x": 400, "y": 0 },
+      "data": { "tool": { "name": "open_app" }, "inputs": { "app_name": "chrome" } }
+    }
+  ],
+  "edges": [
+    { "id": "e1-2", "source": "node_1", "target": "node_2", "animated": true }
+  ]
+}
+
+RULES:
+1. "nodes" must be an array. "edges" must be an array.
+2. Every node must have an id, type="customTool", and valid position.
+3. Node 1 is always name: "TRIGGER".
+4. Output ONLY the JSON object. No other text.`
+
+      const response = await fetch('http://localhost:11434/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'llama3.2', 
+          prompt: `${systemPrompt}\n\nUser Request: ${userMsg}`,
+          stream: false,
+          options: { temperature: 0.2 } // Lower temperature for more consistent JSON
+        })
+      })
+
+      const data = await response.json()
+      const jsonText = data.response.trim()
+      
+      // Robust JSON Extraction
+      let workflow
+      try {
+        // Try to find the first '{' and last '}'
+        const firstBrace = jsonText.indexOf('{')
+        const lastBrace = jsonText.lastIndexOf('}')
+        if (firstBrace === -1 || lastBrace === -1) throw new Error('No JSON found')
+        
+        const cleanJson = jsonText.substring(firstBrace, lastBrace + 1)
+        workflow = JSON.parse(cleanJson)
+      } catch (e) {
+        console.error('Raw AI Response:', jsonText)
+        throw new Error('AI response was not valid JSON. Try again with a simpler request.')
+      }
+
+      if (workflow && Array.isArray(workflow.nodes) && Array.isArray(workflow.edges)) {
+        // Clear old workflow and set new one
+        setNodes([])
+        setEdges([])
+        
+        setTimeout(() => {
+          const rehydratedNodes = workflow.nodes.map((n: any, idx: number) => ({
+            ...n,
+            // Ensure spacing if AI fails to provide it
+            position: n.position || { x: idx * 350, y: 0 },
+            data: { ...n.data, openParameterEditor }
+          }))
+          
+          setNodes(rehydratedNodes)
+          setEdges(workflow.edges.map((e: any) => ({
+            ...e,
+            id: e.id || `e-${e.source}-${e.target}`,
+            style: { stroke: '#7c3aed', strokeWidth: 2, filter: 'drop-shadow(0 0 4px rgba(124,58,237,0.6))' }
+          })))
+          
+          setChatMessages(prev => [...prev, { role: 'ai', text: 'Structure generated. You can now save or run this macro.' }])
+          addToast('Workflow synced to canvas.', 'success')
+        }, 100)
+      } else {
+        throw new Error('AI provided an incomplete workflow structure.')
+      }
+    } catch (err: any) {
+      setChatMessages(prev => [...prev, { role: 'ai', text: `⚠️ ${err.message}` }])
+      addToast(err.message, 'error')
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   // Filter tools by sidebar search
@@ -571,6 +696,80 @@ function Editor() {
             closeEditor={() => setSelectedNodeId(null)}
           />
         )}
+
+        {/* â”€â”€ AI Chat Panel â”€â”€ */}
+        <div className={`fixed bottom-6 right-6 z-50 flex flex-col items-end transition-all duration-300 ${isChatOpen ? 'w-[380px]' : 'w-12'}`}>
+          {!isChatOpen ? (
+            <button
+              onClick={() => setIsChatOpen(true)}
+              className="w-12 h-12 rounded-full bg-violet-600 border border-violet-500 shadow-[0_0_20px_rgba(124,58,237,0.4)] flex items-center justify-center text-white hover:scale-110 transition-transform cursor-pointer"
+            >
+              <RiMessage3Line size={20} />
+            </button>
+          ) : (
+            <div className="w-full h-[500px] bg-[#0a0a12]/95 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden">
+              {/* Chat Header */}
+              <div className="px-4 py-3 border-b border-white/[0.05] flex items-center justify-between bg-white/[0.02]">
+                <div className="flex items-center gap-2.5">
+                  <RiBrainLine size={16} className="text-violet-400" />
+                  <span className="text-[11px] font-black tracking-widest text-zinc-300 uppercase">Workflow Architect</span>
+                </div>
+                <button onClick={() => setIsChatOpen(false)} className="text-zinc-500 hover:text-white transition-colors cursor-pointer">
+                  <RiCloseLine size={18} />
+                </button>
+              </div>
+
+              {/* Messages Area */}
+              <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 scrollbar-none">
+                {chatMessages.map((msg, i) => (
+                  <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[85%] px-3 py-2 rounded-xl text-[11px] leading-relaxed ${
+                      msg.role === 'user' 
+                        ? 'bg-violet-600/20 border border-violet-500/20 text-zinc-200' 
+                        : 'bg-white/[0.03] border border-white/[0.06] text-zinc-400'
+                    }`}>
+                      {msg.text}
+                    </div>
+                  </div>
+                ))}
+                {isGenerating && (
+                  <div className="flex justify-start">
+                    <div className="bg-white/[0.03] border border-white/[0.06] px-3 py-2 rounded-xl flex items-center gap-2">
+                      <RiLoader4Line size={12} className="animate-spin text-violet-500" />
+                      <span className="text-[10px] text-zinc-500 font-mono italic">Thinking...</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Chat Input */}
+              <div className="p-3 border-t border-white/[0.05] bg-black/20">
+                <div className="relative flex items-center bg-white/[0.03] border border-white/[0.08] rounded-xl px-3 py-2 focus-within:border-violet-500/40 transition-colors">
+                  <input
+                    type="text"
+                    value={chatPrompt}
+                    onChange={(e) => setChatPrompt(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAIGenerate()}
+                    placeholder="Describe your workflow..."
+                    className="flex-1 bg-transparent border-none outline-none text-[11px] text-zinc-200 placeholder:text-zinc-700"
+                  />
+                  <button 
+                    onClick={handleAIGenerate}
+                    disabled={!chatPrompt.trim() || isGenerating}
+                    className={`ml-2 p-1.5 rounded-lg transition-all ${
+                      !chatPrompt.trim() || isGenerating 
+                        ? 'text-zinc-700' 
+                        : 'text-violet-400 hover:bg-violet-500/10'
+                    }`}
+                  >
+                    <RiSendPlane2Line size={16} />
+                  </button>
+                </div>
+                <p className="text-[8px] text-zinc-700 mt-2 text-center uppercase tracking-widest">Powered by Llama 3.2 Local LLM</p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
