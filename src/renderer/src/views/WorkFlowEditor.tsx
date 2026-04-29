@@ -338,37 +338,23 @@ function Editor() {
       }
 
       const systemPrompt = `You are an IRIS-AI Workflow Architect. 
-Your goal is to generate a valid JSON structure for an automation workflow.
+Generate a valid JSON automation workflow. 
 
-AVAILABLE TOOLS (USE ONLY THESE NAMES):
+AVAILABLE TOOLS:
 ${JSON.stringify(CATEGORIZED_TOOLS, null, 2)}
 
-STRICT JSON FORMAT:
+OUTPUT ONLY THIS JSON STRUCTURE:
 {
   "nodes": [
-    {
-      "id": "node_1",
-      "type": "customTool",
-      "position": { "x": 0, "y": 0 },
-      "data": { "tool": { "name": "TRIGGER" }, "inputs": {} }
-    },
-    {
-      "id": "node_2",
-      "type": "customTool",
-      "position": { "x": 400, "y": 0 },
-      "data": { "tool": { "name": "open_app" }, "inputs": { "app_name": "chrome" } }
-    }
+    { "id": "node_1", "type": "customTool", "position": { "x": 0, "y": 0 }, "data": { "tool": { "name": "TRIGGER" }, "inputs": {} } }
   ],
-  "edges": [
-    { "id": "e1-2", "source": "node_1", "target": "node_2", "animated": true }
-  ]
+  "edges": []
 }
 
 RULES:
-1. "nodes" must be an array. "edges" must be an array.
-2. Every node must have an id, type="customTool", and valid position.
-3. Node 1 is always name: "TRIGGER".
-4. Output ONLY the JSON object. No other text.`
+1. Every node must have id, type="customTool", and a valid tool name from the list.
+2. Connect them with edges.
+3. Output ONLY the JSON object.`
 
       const response = await fetch('http://localhost:11434/api/generate', {
         method: 'POST',
@@ -377,7 +363,8 @@ RULES:
           model: 'llama3.2', 
           prompt: `${systemPrompt}\n\nUser Request: ${userMsg}`,
           stream: false,
-          options: { temperature: 0.2 } // Lower temperature for more consistent JSON
+          format: 'json', // Force Ollama to return valid JSON
+          options: { temperature: 0.1 } 
         })
       })
 
