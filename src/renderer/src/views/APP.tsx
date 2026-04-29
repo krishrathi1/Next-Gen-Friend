@@ -1,5 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
+  RiAppsLine,
+  RiTerminalBoxLine,
+  RiChromeLine,
+  RiCodeLine,
+  RiSpotifyLine,
+  RiDiscordLine,
   RiGamepadLine,
   RiSearchLine,
   RiCpuLine
