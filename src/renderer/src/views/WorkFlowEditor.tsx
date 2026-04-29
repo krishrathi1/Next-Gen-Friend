@@ -362,8 +362,10 @@ OUTPUT ONLY THIS JSON STRUCTURE:
 }
 
 RULES:
-1. Use the retrieved context to select the best tools.
-2. Output ONLY the JSON object.`
+1. Every node must have a unique id (e.g., "node_1", "node_2"), type="customTool", and a valid tool name.
+2. Connect them sequentially with edges (e.g., node_1 -> node_2).
+3. Space nodes out (increment X by 350 for each step).
+4. Output ONLY the JSON object.`
 
       const response = await fetch('http://localhost:11434/api/generate', {
         method: 'POST',
