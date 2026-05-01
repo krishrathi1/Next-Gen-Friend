@@ -1,4 +1,4 @@
-# 👁️ IRIS AI: The Voice-First Operating Layer
+# 👁️ ELI AI: The Voice-First Operating Layer
 
 [![Next-Gen-Friend](https://img.shields.io/badge/Project-Next--Gen--Friend-blueviolet?style=for-the-badge)](https://github.com/krishrathi1/Next-Gen-Friend)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
